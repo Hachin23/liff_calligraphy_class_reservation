@@ -1,4 +1,5 @@
-🖌️ 書道教室予約システム (liff_calligraphy_class_reservation)LINE LIFFを活用した、シンプルかつ柔軟な予約管理システムです。  
+🖌️ 書道教室予約システム (liff_calligraphy_class_reservation)  
+LINE LIFFを活用した、シンプルかつ柔軟な予約管理システムです。  
 Google Apps Script (GAS) をバックエンド、Google スプレッドシートをデータベースとして利用します。
 
 🌟 主な機能
