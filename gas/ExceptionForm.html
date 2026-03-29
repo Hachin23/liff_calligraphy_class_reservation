@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+<base target="_top">
+<style>
+  body { font-family: sans-serif; padding: 10px; }
+  input, select { margin-bottom: 10px; width: 95%; padding: 5px; box-sizing: border-box; }
+  #lessonIdRow { display: none; } 
+</style>
+</head>
+<body>
+
+  <h3>例外日の設定</h3>
+  
+  <label for="exceptionDate">日付:</label>
+  <input type="date" id="exceptionDate" required><br>
+
+  <label for="exceptionType">例外タイプ:</label>
+  <select id="exceptionType" onchange="toggleLessonId()">
+      <option value="全日休講">全日休講</option>
+      <option value="特定ID休講">特定ID休講</option>
+      <option value="臨時開講">臨時開講</option>
+  </select><br>
+  
+  <div id="lessonIdRow">
+    <label for="targetId">対象レッスンID (Lxxx):</label>
+    <input type="text" id="targetId" placeholder="例: L001">
+  </div>
+  
+  <label for="note">備考 (理由):</label>
+  <input type="text" id="note" placeholder="例: 正月休み、振替授業"><br>
+
+  <button onclick="submitException()">登録</button>
+
+  <script>
+    // 例外タイプに応じてレッスンID入力を切り替える
+    function toggleLessonId() {
+      const type = document.getElementById('exceptionType').value;
+      const lessonIdRow = document.getElementById('lessonIdRow');
+      if (type === '特定ID休講' || type === '臨時開講') {
+        lessonIdRow.style.display = 'block';
+      } else {
+        lessonIdRow.style.display = 'none';
+      }
+    }
+    
+    // 登録ボタンが押されたときの処理
+    function submitException() {
+      const date = document.getElementById('exceptionDate').value;
+      const type = document.getElementById('exceptionType').value;
+      const targetId = document.getElementById('targetId').value;
+      const note = document.getElementById('note').value;
+      
+      if (!date) {
+        alert('日付を入力してください。');
+        return;
+      }
+      
+      // GAS関数を呼び出し、処理結果を onSucces で受け取る
+      google.script.run
+        .withSuccessHandler(onSuccess)
+        .addExceptionEntry(date, type, targetId, note);
+    }
+
+    // GASからの処理結果成功時のフィードバック
+    function onSuccess(message) {
+      alert(message);
+      // フォームをリセット
+      document.getElementById('exceptionDate').value = ''; 
+      document.getElementById('targetId').value = ''; 
+      document.getElementById('note').value = ''; 
+      // 画面を更新する必要があればここに追加
+    }
+    
+    // 画面ロード時に一度実行
+    window.onload = toggleLessonId;
+  </script>
+
+</body>
+</html>

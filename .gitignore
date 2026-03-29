@@ -1,0 +1,22 @@
+# --- Node.js / Build ---
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+dist/
+
+# --- clasp (GAS管理ツール) ---
+# プロジェクト固有の設定ファイル（スクリプトIDが含まれます）
+# 基本的にはローカル管理が安全。
+.clasp.json
+
+# claspのログインセッション情報（絶対にGitHubに上げない！）
+.clasprc.json
+
+# --- OS / IDE ---
+.DS_Store
+.vscode/
+.idea/
+*.swp
+*~
+
