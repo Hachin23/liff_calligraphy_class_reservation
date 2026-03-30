@@ -13,10 +13,10 @@ Google Apps Script (GAS) をバックエンド、Google スプレッドシート
 - Googleカレンダー同期: 1時間毎にGoogleカレンダー同期処理（トリガー）を実行。
 - LINEメッセージ通知: 予約・キャンセル完了時に生徒のLINEトークへ通知を送信。
 
-## 🛠 テックスタック
-- Front-end: HTML5, Vanilla JavaScript, CSS3
-- Back-end: Google Apps Script (GAS) / Node.js (clasp による開発)
-- Database & Storage: 
+## 🛠 技術スタック
+- フロントエンド: HTML5, Vanilla JavaScript, CSS3
+- バックエンド: Google Apps Script (GAS) / Node.js (clasp による開発)
+- データベース & ストレージ: 
   - Google Sheets: メインデータベース（永続データ管理）
   - Cloudflare Workers KV: レスポンス向上のための高速キーバリューストア（キャッシュ層）
 - Calendar: Google Calendar API
@@ -46,11 +46,22 @@ Google Apps Script (GAS) をバックエンド、Google スプレッドシート
 ## 🚀 セットアップとデプロイ  
 後で更新予定
 
-## ⚙️ 定期メンテナンス (トリガー)  
-後で更新予定
+## ⚙️ 定期メンテナンス（トリガー）  
+### generateReservationsList(e) 関数
+- トリガーの設定: GASの 「時間主導型トリガー」 で 毎月1日の午前3時〜4時に実行するよう設定。
+- 処理内容: 引数 e の有無で、自動実行（トリガー）か手動実行（エディタからの操作）かを判別します。手動実行時は誤操作防止のため、スプレッドシート上に確認ダイアログが表示されます。
 
-## 📊 シート構成  
-後で更新予定
+### frequentCalendarSyncAndMaintenance()関数
+- トリガーの設定: GASの 「時間主導型トリガー」 で 1時間ごとに実行するよう設定。
+- 処理内容: 過去になった予約日を予約済みに更新。予約・キャンセル情報をGoogleカレンダーに同期。
+
+### onOpen()関数
+- トリガーの設定: GASのイベントのソースで「スプレッドシートから」で「起動時」に実行されるように設定。
+- 処理内容: スプレッドシートのメニューに管理メニューを表示。手動で休校日の設定や受講日の設定が可能。
+
+### handleEdit()関数
+- トリガーの設定: GASのイベントのソースで「スプレッドシートから」で「編集時」に実行されるように設定。
+- 処理内容: 編集した内容をWorkers KVに同期する。対象シートは「config」、「users」、「reservationsList」の3つ。
 
 ## 💡 開発者メモ
 - 軽量化: 履歴データは保持せず、削除する方針です（スプレッドシートの行数制限対策）。
