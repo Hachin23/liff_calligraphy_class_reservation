@@ -414,23 +414,28 @@ select:focus {
 
 /* '今日' の日付に適用するクラス */
 .date-number.today {
-/* 丸くするための設定（正円にするため width=height） */
-  width: 2rem;               /* 既存のデザインに合わせて調整してください */
-  height: 2rem;
-  border-radius: 50%;         /* 円形にする */
+  /* --- 位置合わせのための追加設定（絶対配置） --- */
+  position: absolute;  /* 親要素（.calendar-cell）を基準に配置 */
+  top: 4px;            /* セル上端からの距離（デザインに合わせて微調整） */
+  right: 4px;          /* セル右端からの距離（デザインに合わせて微調整） */
   
-  /* 中央配置のための設定 */
-  display: inline-flex;       /* inline要素をblockのように扱い中央配置 */
-  justify-content: center;   /* 横方向中央 */
-  align-items: center;       /* 縦方向中央 */
+  /* --- 丸くするための設定（既存を維持・調整） --- */
+  width: 28px;         /* 数字が包める程度の、既存の date-number に近いサイズに */
+  height: 28px;
+  border-radius: 50%;  /* 円形にする */
   
-  /* 色の設定 */
-  background-color: #00b900;  /* LINEのブランドカラー（緑） */
-  color: white !important;    /* 背景が濃いので文字は白に。!importantで既存の色を上書き */
+  /* --- 中央配置のための設定（既存を維持） --- */
+  display: flex;       /* inline-flex から flex に変更（absoluteなので） */
+  justify-content: center; /* 横方向中央 */
+  align-items: center;     /* 縦方向中央 */
   
-  /* 見栄えの調整 */
-  margin: auto;              /* 親要素（calendar-cell）の中で中央に */
+  /* --- 色の設定（既存を維持） --- */
+  background-color: #00b900;  /* LINEカラー */
+  color: white !important;    /* 文字色を白に */
+  
+  /* --- 見栄えの調整（不要なものを削除・調整） --- */
   font-weight: bold;         /* 太字に */
+  margin: 0;                 /* margin: auto は不要なので削除 */
 }
 
 /* ==================================== */
