@@ -15,6 +15,7 @@ function onOpen() {
     .addItem('例外日の追加・設定', 'openExceptionForm')
     .addSeparator() // 区切り線を追加
     .addItem('代理予約 (管理者操作)', 'openAdminBookingForm')
+    .addItem('代理キャンセル (管理者操作)', 'openAdminCancleForm')
     .addSeparator() // 区切り線を追加
     .addItem('予約可能日リストを生成', 'executeReservationListGeneration')
     .addToUi();
@@ -52,8 +53,19 @@ function openAdminBookingForm() {
   SpreadsheetApp.getUi().showSidebar(html);
 }
 
+/**
+ * 代理キャンセルフォームを開く
+ */
+function openAdminCancleForm() {
+  // AdminCancleForm.html ファイルを事前に作成してください
+  const html = HtmlService.createHtmlOutputFromFile('AdminCancleForm') 
+      .setTitle('代理キャンセルシステム')
+      .setWidth(300);
+  SpreadsheetApp.getUi().showSidebar(html);
+}
+
 // ====================================
-// 代理予約処理
+// 代理予約・キャンセル共通処理
 // ====================================
 
 /**
@@ -65,6 +77,10 @@ function getStudentListForUI() {
   // ヘッダーを除き、[名前, LINE ID] を抽出
   return data.slice(1).map(row => ({ lineId: row[0], name: row[1]}));
 }
+
+// ====================================
+// 代理予約処理
+// ====================================
 
 /**
  * 予約可能リスト
@@ -105,6 +121,58 @@ function adminProxyBooking(userId, lessonId, date, time, className) {
     // デバッグ・確認用メッセージ
     makeReservation({ userId: userId, lessonId: lessonId, date: date, time: time, className: className });
     const msg = `【登録完了】\n生徒ID: ${userId}\n日時: ${date} ${time}\nクラス: ${className}\n(LessonID: ${lessonId})`;
+    console.log(msg);
+    return msg;
+  } catch (e) {
+    return "エラーが発生しました: " + e.toString();
+  }
+}
+
+// ====================================
+// 代理キャンセル処理
+// ====================================
+
+/**
+ * ユーザの予約済みリストを取得
+ */
+function getReservationsForUI() {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('reservations');
+  const reservationData = sheet.getDataRange().getValues();
+  const timezone = Session.getScriptTimeZone();
+
+  // ヘッダーを除外して reduce で集約
+  return reservationData.slice(1).reduce((acc, row) => {
+    const [reservationId, rawDate, startTime, , userId, , className, , , , , , status, , ] = row;
+    if (status !== '確定') return acc; //キャンセルは除外
+    if (!reservationId) return acc; // 空行対策
+    
+    // 日付を "yyyy-MM-dd" 形式の文字列キーに変換
+    const dateKey = Utilities.formatDate(new Date(rawDate), timezone, "yyyy-MM-dd");
+
+    if (!acc[dateKey]) {
+      acc[dateKey] = [];
+    }
+
+    // 管理者が判断しやすい情報をセットにして格納
+    acc[dateKey].push({
+      reservationId: reservationId,
+      startDate: startTime ? Utilities.formatDate(new Date(startTime), timezone, "HH:mm") : "",
+      userId: userId,
+      className: className
+    });
+
+    return acc;
+  }, {});
+}
+
+/**
+ * 実際のキャンセル処理（管理者による代理実行）
+ */
+function adminProxyCancel(userId, reservationId) {
+  try {
+    // デバッグ・確認用メッセージ
+    handleCancelReservation({ userId: userId, reservationId: reservationId });
+    const msg = `【キャンセル完了】\n生徒ID: ${userId}\n予約ID: ${reservationId}`;
     console.log(msg);
     return msg;
   } catch (e) {

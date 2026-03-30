@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html>
+<head>
+<base target="_top">
+<style>
+  body { font-family: 'Helvetica Neue', Arial, sans-serif; padding: 15px; color: #333; line-height: 1.4; }
+  h3 { border-bottom: 2px solid #4285f4; padding-bottom: 5px; color: #4285f4; }
+  label { font-weight: bold; display: block; margin-top: 15px; font-size: 0.9rem; }
+  input, select { 
+    margin-top: 5px; width: 100%; padding: 10px; 
+    box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px;
+    font-size: 1rem;
+  }
+  select:disabled { background-color: #f0f0f0; cursor: not-allowed; }
+  .btn-submit { 
+    width: 100%; padding: 12px; background-color: #4285f4; color: white; 
+    border: none; border-radius: 4px; cursor: pointer; margin-top: 25px;
+    font-weight: bold; font-size: 1rem;
+  }
+  .btn-submit:hover { background-color: #357ae8; }
+  .info-text { font-size: 0.8rem; color: #666; margin-top: 5px; }
+  #loader { color: #4285f4; font-weight: bold; }
+</style>
+</head>
+<body>
+
+  <h3>代理キャンセル (管理者用)</h3>
+  <div id="loader">データを読み込み中...</div>
+
+  <div id="formContent" style="display:none;">
+    <label for="studentSelect">生徒を選択:</label>
+    <select id="studentSelect" required>
+      <option value="">-- 生徒を選択 --</option>
+    </select>
+
+    <label for="bookingDate">日付を選択:</label>
+    <input type="date" id="bookingDate" onchange="onDateChange()" required>
+
+    <label for="lessonSelect">レッスン枠:</label>
+    <select id="lessonSelect" disabled>
+      <option value="">先に日付を選択してください</option>
+    </select>
+    <p id="seatInfo" class="info-text"></p>
+    
+    <button class="btn-submit" onclick="submitAdminCancel()">キャンセルを確定する</button>
+  </div>
+
+  <script>
+    let allReservations = {}; // 日付をキーにしたレッスンデータのキャッシュ
+
+    window.onload = function() {
+      // 1. 初期データ（生徒一覧と全予約枠）を並列で取得
+      Promise.all([
+        new Promise(resolve => google.script.run.withSuccessHandler(resolve).getStudentListForUI()),
+        new Promise(resolve => google.script.run.withSuccessHandler(resolve).getReservationsForUI())
+      ]).then(([students, reservations]) => {
+        // 生徒セレクトボックスの構築
+        const sSelect = document.getElementById('studentSelect');
+        students.forEach(s => {
+          const opt = document.createElement('option');
+          opt.value = s.lineId;
+          opt.textContent = s.name;
+          sSelect.appendChild(opt);
+        });
+
+        // 予約データのキャッシュ
+        allReservations = reservations;
+
+        // UI表示
+        document.getElementById('loader').style.display = 'none';
+        document.getElementById('formContent').style.display = 'block';
+      });
+    };
+
+    /**
+     * 日付変更時にレッスン枠を動的に生成
+     */
+    function onDateChange() {
+      const selectedDate = document.getElementById('bookingDate').value;
+      const lessons = allReservations[selectedDate] || [];
+      const lSelect = document.getElementById('lessonSelect');
+      const seatInfo = document.getElementById('seatInfo');
+      
+      lSelect.innerHTML = '';
+      
+      if (lessons.length === 0) {
+        lSelect.innerHTML = '<option value="">この日に予約はありません</option>';
+        lSelect.disabled = true;
+        seatInfo.textContent = '';
+        return;
+      }
+
+      lSelect.disabled = false;
+      const defaultOpt = document.createElement('option');
+      defaultOpt.value = "";
+      defaultOpt.textContent = "-- レッスンを選択 --";
+      lSelect.appendChild(defaultOpt);
+
+      lessons.forEach(lesson => {
+        const opt = document.createElement('option');
+        opt.value = lesson.reservationId;
+        opt.dataset.className = lesson.className;
+        opt.textContent = `${lesson.startDate} （${lesson.className})`;
+        
+        if (lesson.remainingSeats <= 0) {
+          opt.disabled = true;
+          opt.style.color = '#ccc';
+        }
+        lSelect.appendChild(opt);
+      });
+    }
+
+    /**
+     * サーバーへ送信
+     */
+    function submitAdminCancel() {
+      const studentSelect = document.getElementById('studentSelect');
+      const userId = studentSelect.value;
+      
+      const date = document.getElementById('bookingDate').value;
+      
+      const lSelect = document.getElementById('lessonSelect');
+      const reservationId = lSelect.value;
+      
+      // 選択された option から time と className を取得
+      const selectedOption = lSelect.options[lSelect.selectedIndex];
+      const className = selectedOption ? selectedOption.dataset.className : "";
+      
+      if (!userId || !date || !reservationId) {
+        alert('全ての項目を正しく選択してください。');
+        return;
+      }
+      
+      if(!confirm(`${date} ${className}\nこの内容で代行キャンセルを実行しますか？`)) return;
+
+      // ご指定の引数順で GAS を呼び出し
+      google.script.run
+        .withSuccessHandler(function(res) {
+          alert(res);
+        })
+        .adminProxyCancel(userId, reservationId);
+    }
+  </script>
+</body>
+</html>
