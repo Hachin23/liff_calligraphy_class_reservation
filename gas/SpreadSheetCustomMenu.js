@@ -11,11 +11,13 @@ const GENERATE_RESERVATIONS_LIST_MONTH = 3 //　2か月だと作成する月に�
 // ====================================
 function onOpen() {
   SpreadsheetApp.getUi()
-      .createMenu('レッスン管理')
-      .addItem('例外日の追加・設定', 'openExceptionForm')
-      .addSeparator() // 区切り線を追加
-      .addItem('予約可能日リストを生成', 'executeReservationListGeneration')
-      .addToUi();
+    .createMenu('レッスン管理')
+    .addItem('例外日の追加・設定', 'openExceptionForm')
+    .addSeparator() // 区切り線を追加
+    .addItem('代理予約 (管理者操作)', 'openAdminBookingForm')
+    .addSeparator() // 区切り線を追加
+    .addItem('予約可能日リストを生成', 'executeReservationListGeneration')
+    .addToUi();
 }
 
 // ====================================
@@ -39,8 +41,79 @@ function openExceptionForm() {
   SpreadsheetApp.getUi().showSidebar(html);
 }
 
+/**
+ * 代理予約フォームを開く
+ */
+function openAdminBookingForm() {
+  // AdminBookingForm.html ファイルを事前に作成してください
+  const html = HtmlService.createHtmlOutputFromFile('AdminBookingForm') 
+      .setTitle('代理予約システム')
+      .setWidth(300);
+  SpreadsheetApp.getUi().showSidebar(html);
+}
+
 // ====================================
-// 4. 例外日データ書き込みロジック
+// 代理予約処理
+// ====================================
+
+/**
+ * 生徒名簿をJSON形式で取得（UI用）
+ */
+function getStudentListForUI() {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('users');
+  const data = sheet.getDataRange().getValues();
+  // ヘッダーを除き、[名前, LINE ID] を抽出
+  return data.slice(1).map(row => ({ lineId: row[0], name: row[1]}));
+}
+
+/**
+ * 予約可能リスト
+ */
+function getReservationListForUI() {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('reservationsList');
+  const reservationListData = sheet.getDataRange().getValues();
+  const timezone = Session.getScriptTimeZone();
+  // ヘッダーを除外して reduce で集約
+  return reservationListData.slice(1).reduce((acc, row) => {
+    const [rawDate, , startTime, , className, lessonId, , remainingSeats] = row;
+    if (!rawDate) return acc; // 空行対策
+    
+    // 日付を "yyyy-MM-dd" 形式の文字列キーに変換
+    const dateKey = Utilities.formatDate(new Date(rawDate), timezone, "yyyy-MM-dd");
+
+    if (!acc[dateKey]) {
+      acc[dateKey] = [];
+    }
+
+    // 管理者が判断しやすい情報をセットにして格納
+    acc[dateKey].push({
+      lessonId: lessonId,
+      startDate: startTime ? Utilities.formatDate(new Date(startTime), timezone, "HH:mm") : "",
+      className: className,
+      remainingSeats: remainingSeats
+    });
+
+    return acc;
+  }, {});
+}
+
+/**
+ * 実際の予約処理（管理者による代理実行）
+ */
+function adminProxyBooking(userId, lessonId, date, time, className) {
+  try {
+    // デバッグ・確認用メッセージ
+    makeReservation({ userId: userId, lessonId: lessonId, date: date, time: time, className: className });
+    const msg = `【登録完了】\n生徒ID: ${userId}\n日時: ${date} ${time}\nクラス: ${className}\n(LessonID: ${lessonId})`;
+    console.log(msg);
+    return msg;
+  } catch (e) {
+    return "エラーが発生しました: " + e.toString();
+  }
+}
+
+// ====================================
+// 例外日データ書き込みロジック
 // ====================================
 
 /**
