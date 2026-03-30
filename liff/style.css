@@ -413,7 +413,7 @@ select:focus {
 }
 
 /* '今日' の日付に適用するクラス */
-.date-number .today {
+.date-number.today {
 /* 丸くするための設定（正円にするため width=height） */
   width: 2rem;               /* 既存のデザインに合わせて調整してください */
   height: 2rem;
