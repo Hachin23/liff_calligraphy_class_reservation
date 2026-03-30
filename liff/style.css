@@ -424,8 +424,8 @@ select:focus {
   z-index: -1;
   
   /* --- 円を親要素（.date-number）のど真ん中に配置する魔法の呪文 --- */
-  top: 57%;
-  left: 72%;
+  top: 56%;
+  left: 70%;
   transform: translate(-50%, -50%); /* 自身のサイズの半分だけ戻す */
   
   /* --- 円のサイズと形の設定 --- */
