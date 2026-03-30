@@ -414,29 +414,33 @@ select:focus {
 
 /* '今日' の日付に適用するクラス */
 .date-number.today {
-  /* --- 位置合わせのための追加設定（絶対配置） --- */
-  position: absolute;  /* 親要素（.calendar-cell）を基準に配置 */
-  top: 4px;            /* セル上端からの距離（デザインに合わせて微調整） */
-  right: 4px;          /* セル右端からの距離（デザインに合わせて微調整） */
-  
-  /* --- 丸くするための設定（既存を維持・調整） --- */
-  width: 28px;         /* 数字が包める程度の、既存の date-number に近いサイズに */
-  height: 28px;
-  border-radius: 50%;  /* 円形にする */
-  
-  /* --- 中央配置のための設定（既存を維持） --- */
-  display: flex;       /* inline-flex から flex に変更（absoluteなので） */
-  justify-content: center; /* 横方向中央 */
-  align-items: center;     /* 縦方向中央 */
-  
-  /* --- 色の設定（既存を維持） --- */
-  background-color: #00b900;  /* LINEカラー */
-  color: white !important;    /* 文字色を白に */
-  
-  /* --- 見栄えの調整（不要なものを削除・調整） --- */
-  font-weight: bold;         /* 太字に */
-  margin: 0;                 /* margin: auto は不要なので削除 */
+  color: #ffffff;
+  font-weight: bold;
 }
+
+.date-number.today::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  
+  /* --- 円を親要素（.date-number）のど真ん中に配置する魔法の呪文 --- */
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%); /* 自身のサイズの半分だけ戻す */
+  
+  /* --- 円のサイズと形の設定 --- */
+  /* 数字（date-number）のサイズに合わせて調整してください。
+     既存のdate-numberが 24px なら 28px くらいが綺麗です。 */
+  width: 28px;        
+  height: 28px;
+  background-color: #00b900; /* LINEカラー（緑） */
+  border-radius: 50%; /* 円形にする */
+  
+  /* --- 既存のスタイル（paddingなど）の影響をリセット --- */
+  padding: 0;
+  margin: 0;
+}
+
 
 /* ==================================== */
 /* 選択詳細エリア (selectionDetails) */
@@ -598,6 +602,8 @@ select:focus {
 /* 日付の数字を囲むspan（JSで追加） */
 .calendar-cell .date-number {
     display: block; /* 日付を独立させ、右寄せを維持 */
+    position: relative;
+    z-index: 1;
 }
 
 /* 予約済みの日の日付番号を強調 */
