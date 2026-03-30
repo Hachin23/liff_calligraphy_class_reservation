@@ -358,7 +358,8 @@ function renderReservationCalendar(date, status, capacityData = {}, myReservatio
   calendarContainerRes.innerHTML = ''; // クリア
 
   const today = new Date();
-  today.setHours(0, 0, 0, 0); 
+  today.setHours(0, 0, 0, 0);
+  const todayTime = today.getTime();
   const firstDayOfMonth = new Date(year, month, 1);
   const lastDayOfMonth = new Date(year, month + 1, 0);
   
@@ -396,8 +397,6 @@ function renderReservationCalendar(date, status, capacityData = {}, myReservatio
     calendarHtml += `<div class="calendar-day-header ${css_serector}">${daysOfWeek[i]}</div>`;
   }
 
-  
-
   // 【1日の開始曜日までの空セルを作成】
   let startDayOfWeek = firstDayOfMonth.getDay();
   if (FIRST_DAY_OF_THE_WEEK === "月曜日") {
@@ -424,7 +423,8 @@ function renderReservationCalendar(date, status, capacityData = {}, myReservatio
   // ⭐ 日付セルを作成
   for (let day = 1; day <= lastDayOfMonth.getDate(); day++) {
     const dateString = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-    const currentDateOnly = new Date(dateString); 
+    const currentDateOnly = new Date(dateString);
+    const targetDate = new Date(year, month, day);
     
     let dayClass = 'calendar-cell';
     let capacityInfo = ''; 
@@ -498,16 +498,16 @@ function renderReservationCalendar(date, status, capacityData = {}, myReservatio
         }
       }
     }
-    
-    // ローディング中の表示
-    // if (status === 'loading') {
-    //     capacityInfo = '読込中...';
-    //     dayClass = 'calendar-cell loading'; // ロード中は上書き
-    // }
+
+    // 今日であれば、CSSクラス 'today' を追加（date-numberは維持）
+    let todayClass = '';
+    if (targetDate.getTime() === todayTime) {
+      todayClass = ' today';
+    }
 
     calendarHtml += `
         <div class="${dayClass}" data-date="${dateString}">
-            <span class="date-number">${day}</span>
+            <span class="date-number${todayClass}">${day}</span>
             ${isMyAttended ? '<span class="my-attended-badge">受講済</span>' : ''}
             ${isMyReserved ? '<span class="my-reserved-badge">予約済</span>' : ''} 
             ${isReservable || dayCapacity.length > 0 ? `<div class="capacity-indicator">${capacityInfo}</div>` : ''}

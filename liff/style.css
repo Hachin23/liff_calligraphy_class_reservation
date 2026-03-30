@@ -341,16 +341,6 @@ select:focus {
 }
 
 /* 日曜日 (赤字) */
-/* .calendar-day-header:nth-child(7) {
-    color: #dc3545;
-} */
-
-/* 土曜日 (青字) */
-/* .calendar-day-header:nth-child(6) {
-    color: #007bff;
-} */
-
-/* 日曜日 (赤字) */
 .calendar-day-header.day_of_week_red {
     color: #dc3545; /* 赤 */
 }
@@ -420,6 +410,27 @@ select:focus {
 .calendar-cell.today-contact {
   border-bottom: 2px solid orange; /* 赤の線で予約不可を示す */
   color: orange;
+}
+
+/* '今日' の日付に適用するクラス */
+.date-number .today {
+/* 丸くするための設定（正円にするため width=height） */
+  width: 2rem;               /* 既存のデザインに合わせて調整してください */
+  height: 2rem;
+  border-radius: 50%;         /* 円形にする */
+  
+  /* 中央配置のための設定 */
+  display: inline-flex;       /* inline要素をblockのように扱い中央配置 */
+  justify-content: center;   /* 横方向中央 */
+  align-items: center;       /* 縦方向中央 */
+  
+  /* 色の設定 */
+  background-color: #00b900;  /* LINEのブランドカラー（緑） */
+  color: white !important;    /* 背景が濃いので文字は白に。!importantで既存の色を上書き */
+  
+  /* 見栄えの調整 */
+  margin: auto;              /* 親要素（calendar-cell）の中で中央に */
+  font-weight: bold;         /* 太字に */
 }
 
 /* ==================================== */
