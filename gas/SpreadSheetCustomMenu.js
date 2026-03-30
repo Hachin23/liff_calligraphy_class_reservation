@@ -48,7 +48,7 @@ function openExceptionForm() {
 function openAdminBookingForm() {
   // AdminBookingForm.html ファイルを事前に作成してください
   const html = HtmlService.createHtmlOutputFromFile('AdminBookingForm') 
-      .setTitle('代理予約システム')
+      .setTitle('代理予約')
       .setWidth(300);
   SpreadsheetApp.getUi().showSidebar(html);
 }
@@ -59,7 +59,7 @@ function openAdminBookingForm() {
 function openAdminCancleForm() {
   // AdminCancleForm.html ファイルを事前に作成してください
   const html = HtmlService.createHtmlOutputFromFile('AdminCancleForm') 
-      .setTitle('代理キャンセルシステム')
+      .setTitle('代理キャンセル')
       .setWidth(300);
   SpreadsheetApp.getUi().showSidebar(html);
 }
@@ -74,8 +74,8 @@ function openAdminCancleForm() {
 function getStudentListForUI() {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('users');
   const data = sheet.getDataRange().getValues();
-  // ヘッダーを除き、[名前, LINE ID] を抽出
-  return data.slice(1).map(row => ({ lineId: row[0], name: row[1]}));
+  // ヘッダーを除き、[名前, LINE ID, クラス名] を抽出
+  return data.slice(1).map(row => ({ lineId: row[0], name: row[1], className: row[2]}));
 }
 
 // ====================================
@@ -119,8 +119,8 @@ function getReservationListForUI() {
 function adminProxyBooking(userId, lessonId, date, time, className) {
   try {
     // デバッグ・確認用メッセージ
-    makeReservation({ userId: userId, lessonId: lessonId, date: date, time: time, className: className });
-    const msg = `【登録完了】\n生徒ID: ${userId}\n日時: ${date} ${time}\nクラス: ${className}\n(LessonID: ${lessonId})`;
+    const result = makeReservation({ userId: userId, lessonId: lessonId, date: date, time: time, className: className });
+    const msg = `【登録完了】\n生徒ID: ${userId}\n日時: ${date} ${time}\nクラス: ${className}\n(LessonID: ${lessonId})\nメッセージ: ${result.message}`;
     console.log(msg);
     return msg;
   } catch (e) {

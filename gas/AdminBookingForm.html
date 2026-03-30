@@ -60,6 +60,7 @@
           const opt = document.createElement('option');
           opt.value = s.lineId;
           opt.textContent = s.name;
+          opt.dataset.className = s.className;
           sSelect.appendChild(opt);
         });
 
@@ -100,7 +101,6 @@
         const opt = document.createElement('option');
         opt.value = lesson.lessonId;
         opt.dataset.time = lesson.startDate;
-        opt.dataset.className = lesson.className;
         opt.textContent = `${lesson.startDate} ${lesson.className} (残:${lesson.remainingSeats})`;
         
         if (lesson.remainingSeats <= 0) {
@@ -117,16 +117,18 @@
     function submitAdminBooking() {
       const studentSelect = document.getElementById('studentSelect');
       const userId = studentSelect.value;
+      // 選択された option から className を取得
+      const studentSelectedOption = studentSelect.options[studentSelect.selectedIndex];
+      const className = studentSelectedOption ? studentSelectedOption.dataset.className : "";
       
       const date = document.getElementById('bookingDate').value;
       
       const lSelect = document.getElementById('lessonSelect');
       const lessonId = lSelect.value;
       
-      // 選択された option から time と className を取得
+      // 選択された option から time を取得
       const selectedOption = lSelect.options[lSelect.selectedIndex];
       const time = selectedOption ? selectedOption.dataset.time : "";
-      const className = selectedOption ? selectedOption.dataset.className : "";
       
       if (!userId || !date || !lessonId) {
         alert('全ての項目を正しく選択してください。');
