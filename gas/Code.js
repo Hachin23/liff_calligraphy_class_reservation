@@ -330,6 +330,35 @@ function makeReservation(params) {
           return { success: false, message: 'この予約クラスは、あなたの登録クラスと異なります。' };
       }
 
+      //予約の重複チェック
+      const isDuplicateReservation = allReservations.some(row => {
+        if (row[RES_COL_USER_ID] !== userId) return false;
+
+        if (row[RES_COL_STATUS] !== '確定' &&
+            row[RES_COL_STATUS] !== '受講済み') {
+          return false;
+        }
+
+        const reservationDate = Utilities.formatDate(
+          row[RES_COL_DATE],
+          ssTimezone,
+          'yyyy-MM-dd'
+        );
+
+        const reservationTimeRaw = row[RES_COL_START_TIME];
+
+        const reservationTime = reservationTimeRaw instanceof Date
+            ? Utilities.formatDate(reservationTimeRaw, ssTimezone, "HH:mm")
+            : String(reservationTimeRaw).trim();
+
+        return reservationDate === date &&
+              reservationTime === time;
+      });
+
+      if (isDuplicateReservation) {
+        return { success: false, message: 'この日時は既に予約済みです。'};
+      }
+
       const currentReservations = allReservations
           .filter(row => {
               const reservationDateRaw = row[RES_COL_DATE]; // 予約日のデータ (Dateオブジェクト)
@@ -737,4 +766,48 @@ function verifyToken(accessToken) {
   return true;
 }
 
+
+function duplicateReservation() {
+  const allReservations = SPREADSHEET.getSheetByName(SHEET_NAME_RESERVATIONS).getDataRange().getValues().slice(1);
+  const userId = "U970b724e77a5e3b663c9456c97c76578";
+  const ssTimezone = SPREADSHEET.getSpreadsheetTimeZone();
+  //予約の重複チェック
+  const isDuplicateReservation = allReservations.some(row => {
+    if (row[RES_COL_USER_ID] !== userId) return false;
+
+    if (row[RES_COL_STATUS] !== '確定' &&
+        row[RES_COL_STATUS] !== '受講済み') {
+      return false;
+    }
+
+    const reservationDate = Utilities.formatDate(
+      row[RES_COL_DATE],
+      ssTimezone,
+      'yyyy-MM-dd'
+    );
+
+    const reservationTimeRaw = row[RES_COL_START_TIME];
+
+    const reservationTime = reservationTimeRaw instanceof Date
+        ? Utilities.formatDate(reservationTimeRaw, ssTimezone, "HH:mm")
+        : String(reservationTimeRaw).trim();
+
+    const date = "2026-07-26";
+    const time = "10:10";
+
+    Logger.log({
+  reservationDate,
+  date,
+  reservationTime,
+  time
+});
+
+    return reservationDate === date &&
+          reservationTime === time;
+  });
+
+  if (isDuplicateReservation) {
+    return { success: false, message: 'この日時は既に予約済みです。'};
+  }
+}
 
