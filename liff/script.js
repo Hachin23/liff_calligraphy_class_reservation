@@ -943,6 +943,10 @@ function saveToCache(capacityData, userInfoData, configData, monthKey = "") {
     MY_RESERVIONS[monthKey] = { data: [], lastFetch: now };
   }
 
+  if (MY_RESERVIONS[monthKey].lastFetch !== now) {
+    MY_RESERVIONS[monthKey].lastFetch = now;
+  }
+
   // 3. 出席情報
   MY_ATTENDED_DATES = {
     data: userInfoData.myAttendedDates || [],
