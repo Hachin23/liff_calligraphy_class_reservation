@@ -331,8 +331,8 @@ async function fetchAndRenderCapacity(date) {
     const json = await res.json();
     
     if (json.success) {
-      // saveToCache(json.capacityData, json.userInfo, json.config, monthKey);
-      // const fullCache = getValidFullCache(monthKey); // キャッシュから最新の形を取得
+      saveToCache(json.capacityData, json.userInfo, json.config, monthKey);
+      const fullCache = getValidFullCache(monthKey); // キャッシュから最新の形を取得
       renderReservationCalendar(date, 'loaded', json.capacityData, json.userInfo, json.config);
     }
   } catch (e) {
