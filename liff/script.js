@@ -15,7 +15,7 @@ let MY_RESERVIONS = {};
 let MY_ATTENDED_DATES = { data: [], lastFetch: 0 };
 let CURRENT_SCREEN_DATE = new Date(); // 予約画面のカレンダー表示月
 const MAX_RESERVABLE_MONTHS = 1; // (今月、来月)
-const CACHE_EXPIRATION_MS = 1 * 30 * 1000; // 1分(Workersが最新に反映されるまでで問題なし)
+const CACHE_EXPIRATION_MS = 1 * 60 * 1000; // 1分(Workersが最新に反映されるまでで問題なし)
 
 // 予約カレンダーの曜日初めの切り替え用
 let FIRST_DAY_OF_THE_WEEK = "";
@@ -333,7 +333,7 @@ async function fetchAndRenderCapacity(date) {
     if (json.success) {
       saveToCache(json.capacityData, json.userInfo, json.config, monthKey);
       const fullCache = getValidFullCache(monthKey); // キャッシュから最新の形を取得
-      renderReservationCalendar(date, 'loaded', json.capacityData, json.userInfo, json.config);
+      renderReservationCalendar(date, 'loaded', fullCache.capacity, fullCache.reserved, fullCache.attended);
     }
   } catch (e) {
       console.error("カレンダー情報取得時の通信エラー", e);
