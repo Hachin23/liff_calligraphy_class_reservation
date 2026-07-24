@@ -15,7 +15,7 @@ let MY_RESERVIONS = {};
 let MY_ATTENDED_DATES = { data: [], lastFetch: 0 };
 let CURRENT_SCREEN_DATE = new Date(); // 予約画面のカレンダー表示月
 const MAX_RESERVABLE_MONTHS = 1; // (今月、来月)
-const CACHE_EXPIRATION_MS = 2 * 60 * 1000; // 1分(Workersが最新に反映されるまでで問題なし)
+const CACHE_EXPIRATION_MS = 1 * 30 * 1000; // 1分(Workersが最新に反映されるまでで問題なし)
 
 // 予約カレンダーの曜日初めの切り替え用
 let FIRST_DAY_OF_THE_WEEK = "";
@@ -903,7 +903,7 @@ function sendLiffMessage(messageText) {
 /**
  * データをキャッシュに保存する関数
  */
-function saveToCache(capacityData, userInfoData, configData, monthKey = "") {
+function saveToCache(capacityData, userInfoData, configData, monthKey) {
   const now = Date.now();
 
   // 1. 残席情報を保存
@@ -939,7 +939,7 @@ function saveToCache(capacityData, userInfoData, configData, monthKey = "") {
   });
 
   // 予約がない月の対応
-  if (!MY_RESERVIONS[monthKey] && monthKey !== "") {
+  if (!MY_RESERVIONS[monthKey]) {
     MY_RESERVIONS[monthKey] = { data: [], lastFetch: now };
   }
 
