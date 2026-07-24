@@ -986,10 +986,19 @@ function getValidFullCache(monthKey) {
   const isResExpired = (now - resCache.lastFetch) > CACHE_EXPIRATION_MS;
   const isAttExpired = (now - attCache.lastFetch) > CACHE_EXPIRATION_MS;
 
-  if (isCapExpired || isResExpired || isAttExpired) {
-    console.log(`キャッシュのいずれかが期限切れです: ${monthKey}`);
+  if (isCapExpired) {
+    console.log(`capCacheが期限切れです: ${monthKey}`);
     return null;
   }
+  if (isResExpired) {
+    console.log(`resCacheが期限切れです: ${monthKey}`);
+    return null;
+  }
+  if (isAttExpired) {
+    console.log(`attCacheが期限切れです: ${monthKey}`);
+    return null;
+  }
+
 
   return {
     capacity: capCache.data,
