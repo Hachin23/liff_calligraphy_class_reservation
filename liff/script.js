@@ -332,8 +332,10 @@ async function fetchAndRenderCapacity(date) {
     
     if (json.success) {
       saveToCache(json.capacityData, json.userInfo, json.config, monthKey);
-      const fullCache = getValidFullCache(monthKey); // キャッシュから最新の形を取得
-      renderReservationCalendar(date, 'loaded', fullCache.capacity, fullCache.reserved, fullCache.attended);
+      const capCacheData = AVAILABLE_CAPACITY_DATA[monthKey].data;
+      const resCacheData = MY_RESERVIONS[monthKey].data;
+      const attCacheData = MY_ATTENDED_DATES.data;
+      renderReservationCalendar(date, 'loaded', capCacheData, resCacheData, attCacheData);
     }
   } catch (e) {
       console.error("カレンダー情報取得時の通信エラー", e);
