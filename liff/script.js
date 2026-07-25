@@ -1032,9 +1032,9 @@ function getValidFullCache(monthKey) {
   }
 
   return {
-    capacity: capCache.data,
-    reserved: resCache.data,
-    attended: attCache.data
+    capacity: capCache,
+    reserved: resCache,
+    attended: attCache
   };
 }
 
