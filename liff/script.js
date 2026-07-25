@@ -111,7 +111,7 @@ async function fetchInitialAppData() {
     saveToCache(json.capacityData, json.userInfo, json.config, monthKey);
 
     switchPage(false, json.userInfo.data);
-    renderReservationCalendar(today, 'loaded', AVAILABLE_CAPACITY_DATA[monthKey]?.data, MY_RESERVIONS[monthKey]?.data, MY_ATTENDED_DATES.data);
+    renderReservationCalendar(today, 'loaded', AVAILABLE_CAPACITY_DATA[monthKey]?.data, MY_RESERVIONS[monthKey]?.data, MY_ATTENDED_DATES?.data);
     document.getElementById('loading').style.display = 'none';
 
   } else {
@@ -332,9 +332,9 @@ async function fetchAndRenderCapacity(date) {
     
     if (json.success) {
       saveToCache(json.capacityData, json.userInfo, json.config, monthKey);
-      const capCacheData = AVAILABLE_CAPACITY_DATA[monthKey].data;
-      const resCacheData = MY_RESERVIONS[monthKey].data;
-      const attCacheData = MY_ATTENDED_DATES.data;
+      const capCacheData = AVAILABLE_CAPACITY_DATA[monthKey]?.data;
+      const resCacheData = MY_RESERVIONS[monthKey]?.data;
+      const attCacheData = MY_ATTENDED_DATES?.data;
       renderReservationCalendar(date, 'loaded', capCacheData, resCacheData, attCacheData);
     }
   } catch (e) {
@@ -568,7 +568,7 @@ function renderAvailableClassesList(classes, dateString, monthKey) {
 
   let listHtml = '';
 
-  const monthReservation = MY_RESERVIONS[monthKey].data || {};
+  const monthReservation = MY_RESERVIONS[monthKey]?.data || {};
   const reservedCount = monthReservation.length;
   const AttendedCount = MY_ATTENDED_DATES.data.filter(item => item.includes(monthKey)).length;
   const userLimitReached = (reservedCount + AttendedCount) == upperLimit;
@@ -975,32 +975,61 @@ function saveToCache(capacityData, userInfoData, configData, monthKey) {
 /**
  * キャッシュが有効か判定し、有効なら一式を返す
  */
+// function getValidFullCache(monthKey) {
+//   const now = Date.now();
+//   const capCache = AVAILABLE_CAPACITY_DATA[monthKey];
+//   const resCache = MY_RESERVIONS[monthKey];
+//   const attCache = MY_ATTENDED_DATES;
+
+//   // すべてのキャッシュが存在し、かつ期限内かチェック
+//   if (!capCache?.lastFetch || !resCache?.lastFetch || !attCache?.lastFetch) return null;
+
+//   const isCapExpired = (now - capCache.lastFetch) > CACHE_EXPIRATION_MS;
+//   const isResExpired = (now - resCache.lastFetch) > CACHE_EXPIRATION_MS;
+//   const isAttExpired = (now - attCache.lastFetch) > CACHE_EXPIRATION_MS;
+
+//   if (isCapExpired) {
+//     console.log(`capCacheが期限切れです: ${monthKey}`);
+//     return null;
+//   }
+//   if (isResExpired) {
+//     console.log(`resCacheが期限切れです: ${monthKey}`);
+//     return null;
+//   }
+//   if (isAttExpired) {
+//     console.log(`attCacheが期限切れです: ${monthKey}`);
+//     return null;
+//   }
+
+
+//   return {
+//     capacity: capCache.data,
+//     reserved: resCache.data,
+//     attended: attCache.data
+//   };
+// }
+
+/**
+ * キャッシュが有効か判定し、有効なら一式を返す
+ */
 function getValidFullCache(monthKey) {
   const now = Date.now();
-  const capCache = AVAILABLE_CAPACITY_DATA[monthKey];
-  const resCache = MY_RESERVIONS[monthKey];
-  const attCache = MY_ATTENDED_DATES;
+  const cachedJSON = localStorage.getItem("APP_DATA_CACHE");
+  if (!cachedJSON) return null;
+
+  const cacheObject = JSON.parse(cachedJSON);
+  const capCache = cacheObject.capacityData;
+  const resCache = cacheObject.userInfo.myReservedDates;
+  const attCache = cacheObject.userInfo.myAttendedDates;
 
   // すべてのキャッシュが存在し、かつ期限内かチェック
-  if (!capCache?.lastFetch || !resCache?.lastFetch || !attCache?.lastFetch) return null;
+  if (!cacheObject?.lastFetch) return null;
 
-  const isCapExpired = (now - capCache.lastFetch) > CACHE_EXPIRATION_MS;
-  const isResExpired = (now - resCache.lastFetch) > CACHE_EXPIRATION_MS;
-  const isAttExpired = (now - attCache.lastFetch) > CACHE_EXPIRATION_MS;
-
-  if (isCapExpired) {
-    console.log(`capCacheが期限切れです: ${monthKey}`);
+  const isCacheExpired = (now - cacheObject.lastFetch) > CACHE_EXPIRATION_MS;
+  if (isCacheExpired) {
+    console.log(`キャッシュが期限切れです: ${monthKey}`);
     return null;
   }
-  if (isResExpired) {
-    console.log(`resCacheが期限切れです: ${monthKey}`);
-    return null;
-  }
-  if (isAttExpired) {
-    console.log(`attCacheが期限切れです: ${monthKey}`);
-    return null;
-  }
-
 
   return {
     capacity: capCache.data,
