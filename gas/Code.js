@@ -561,7 +561,7 @@ function handleCancelReservation(params) {
     try {
 
       const ssTimezone = SPREADSHEET.getSpreadsheetTimeZone();
-      const { userId, reservationId } = params;
+      const { userId, reservationId, admin = false } = params;
 
       if (!userId || !reservationId) {
         return { success: false, message: "必須パラメータが不足しています。" };
@@ -628,7 +628,7 @@ function handleCancelReservation(params) {
       }
 
       const now = new Date();
-      if (now.getTime() >= cancellableUntil.getTime()) {
+      if (!admin && now.getTime() >= cancellableUntil.getTime()) {
           return { success: false, message: "キャンセル期限が過ぎています。" };
       }
       
