@@ -507,9 +507,7 @@ function renderReservationCalendar(date, status, capacityData = {}, myReservatio
   // 上限到達時のメッセージ表示
   if (userLimitReached && !currentUser.afterInitialRegistration) {
     upperLimitMessageArea.classList.remove("hidden");
-    if (!userAttendedLimitReached) {
-      // upperLimitMessageArea.innerHTML = `<div class='reservedMsg'>今月の予約上限数（${upperLimit}回）に到達しました。</div>`;
-    } else {
+    if (userAttendedLimitReached && currentUser.upperLimit !== 0) {
       //受講上限到達
       upperLimitMessageArea.innerHTML = `<div class='attendedMsg'>今月の稽古お疲れ様でした🙌</div>`;
     }
