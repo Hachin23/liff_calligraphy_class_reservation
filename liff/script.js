@@ -513,6 +513,7 @@ function renderReservationCalendar(date, status, capacityData = {}, myReservatio
     }
   // 初期登録後のメッセージ表示
   } else if (userLimitReached && currentUser.afterInitialRegistration) {
+    upperLimitMessageArea.classList.remove("hidden");
     upperLimitMessageArea.innerHTML = `<div class='attendedMsg'>利用情報の登録まで、しばらくお待ちください。</div>`;
   }
 }
