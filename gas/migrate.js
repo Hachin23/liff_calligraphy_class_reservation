@@ -114,8 +114,7 @@ function syncConfigToWorkers() {
   const configData = {
     version: configSheet.getRange('B2').getValue(),
     CLASS_INFO: {
-      CLASS_NAME: configSheet.getRange(3, 2, 1, configSheet.getLastColumn()-1).getValues()[0].filter(String),
-      UPPER_LIMIT_NUMBER: configSheet.getRange(4, 2, 1, configSheet.getLastColumn()-1).getValues()[0].filter(String)
+      CLASS_NAME: configSheet.getRange(3, 2, 1, configSheet.getLastColumn()-1).getValues()[0].filter(String)
     },
     CALENDAR_INFO: {
       FIRST_DAY_OF_WEEK: configSheet.getRange('B5').getValue()

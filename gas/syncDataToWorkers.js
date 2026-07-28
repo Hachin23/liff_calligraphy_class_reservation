@@ -135,11 +135,10 @@ function getUserInfoFromSheet(userId) {
   
   // ユーザーのチケット情報を検索
   const dateStringNow = Utilities.formatDate(new Date(), SPREADSHEET.getSpreadsheetTimeZone(), 'yyyy-MM-dd');
+  let userTicketsRows = userTicketsData.slice(1).filter(row => row[0] === userId)
   // 有効期限が残っているものだけ取得
-  let userTicketsRows = userTicketsData.slice(1).
-    filter(row => row[0] === userId
-      && Utilities.formatDate(row[userTicketsCol.expirationDate], SPREADSHEET.getSpreadsheetTimeZone(), 'yyyy-MM-dd') > dateStringNow)
-  let remainingNumberTotal = userTicketsRows.length === 0 ? -1 : userTicketsRows.map(row => row[userTicketsCol.remainingNumber]).reduce((total, num) => total + num, 0);
+  let validUserTicketsRows = userTicketsRows.filter(row => Utilities.formatDate(row[userTicketsCol.expirationDate], SPREADSHEET.getSpreadsheetTimeZone(), 'yyyy-MM-dd') > dateStringNow)
+  let remainingNumberTotal = validUserTicketsRows.length === 0 ? 0 : validUserTicketsRows.map(row => row[userTicketsCol.remainingNumber]).reduce((total, num) => total + num, 0);
 
   // Workersへ送るためのデータ構造を作成
   return {
@@ -152,14 +151,15 @@ function getUserInfoFromSheet(userId) {
     upperLimitNumberNextMonth: userMonthlySubscriptionsRow == null ? 0 : userMonthlySubscriptionsRow[userMonthlySubscriptionsCol.limitNext],
 
     ticketInfo: {
-      dispInfo: userTicketsRows.map(row => {
+      dispInfo: validUserTicketsRows.map(row => {
         const obj = {};
         obj.remainingNumber = row[userTicketsCol.remainingNumber];
         obj.expirationDate = Utilities.formatDate(row[userTicketsCol.expirationDate], SPREADSHEET.getSpreadsheetTimeZone(), 'yyyy-MM-dd');
         return obj;
       }),
-      // マイナスの場合は、チケット購入なし
-      remainingNumberTotal: remainingNumberTotal
+      remainingNumberTotal: remainingNumberTotal,
+      // チケット購入履歴があるか
+      purchaseHistory: userTicketsRows.length !== 0 ? true : false
     }
   };
 }

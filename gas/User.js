@@ -45,10 +45,16 @@ function registerUserClassGAS(params) {
       userId: userId,
       displayName: displayName,
       className: className,
-      // 稽古回数は、ユーザ登録後に管理者側で登録するので、登録時は「0」に設定
+      // 稽古回数は、ユーザ登録後に管理者側で登録
       upperLimitNumber: 0,
       upperLimitNumberThisMonth: 0,
-      upperLimitNumberNextMonth: 0
+      upperLimitNumberNextMonth: 0,
+      // チケット回数は、ユーザ登録後に管理者側で登録
+      ticketInfo: {
+        dispInfo: [],
+        remainingNumberTotal: 0,
+        purchaseHistory: false
+      },
     },
     myReservedDates: reservations.myReservedDates,
     myAttendedDates: reservations.myAttendedDates
