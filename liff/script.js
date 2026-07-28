@@ -1023,7 +1023,7 @@ function updateClassInfoUI(currentUser, monthKey) {
   const currentMonthKey = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`; 
   const upperLimitLabel = currentMonthKey === monthKey ? currentUser.upperLimitNumberThisMonth : currentUser.upperLimitNumberNextMonth;
   const monthlySubscription = currentUser.upperLimitNumber === 0 ? "" : `🗓️ 月${upperLimitLabel}回`;
-  const ticketInfo = currentUser.purchaseHistory === true ? `🎫 残${currentUser.ticketInfo.remainingNumberTotal}回` : "";
+  const ticketInfo = currentUser.ticketInfo.purchaseHistory === true ? `🎫 残${currentUser.ticketInfo.remainingNumberTotal}回` : "";
   classInfo.innerHTML = `<span id='userName'>   👤 ${currentUser.displayName}</span><span id='userClassName'>  ┊  🖌️ ${currentUser.className} ${monthlySubscription}</span><span id='userTicketInfo'>${ticketInfo}</span>`;
 }
 
