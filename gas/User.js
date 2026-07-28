@@ -22,11 +22,11 @@ function registerUserClassGAS(params) {
   if (foundCell) {
     // 既存ユーザーがいる場合は更新
     const actualRow = foundCell.getRow();
-    const newData = [displayName, className, timestamp];
-    usersSheet.getRange(actualRow, 2, 1, 4).setValues(newData);
+    const newData = [displayName, className, "", timestamp];
+    usersSheet.getRange(actualRow, 2, 1, 5).setValues(newData);
   } else {
     // 新規ユーザーを追加
-    usersSheet.appendRow([userId, displayName, className, timestamp]);
+    usersSheet.appendRow([userId, displayName, className, "",timestamp]);
   }
 
   CacheService.getScriptCache().remove('user_' + params.userId);

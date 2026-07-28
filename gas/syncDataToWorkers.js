@@ -67,30 +67,30 @@ function getAllReservationsForUser(userId) {
 }
 
 /**
- * スプレッドシートの「users」シートから特定ユーザーの基本情報を取得する
+ * 以下のスプレッドシートから特定ユーザーの基本情報を取得する
+ * usersシート
+ * userMonthlySubscriptionsシート
+ * userTicketsシート
  */
 function getUserInfoFromSheet(userId) {
-  const sheet = SPREADSHEET.getSheetByName(SHEET_NAME_USERS);
-  if (!sheet) throw new Error("ユーザーシートが見つかりません。");
-
-  const data = sheet.getDataRange().getValues();
-  const header = data[0];
+  const userSheet = SPREADSHEET.getSheetByName(SHEET_NAME_USERS);
+  if (!userSheet) throw new Error("usersシートが見つかりません。");
   
+  const userData = userSheet.getDataRange().getValues();
+  const userHeader = userData[0];
+
   // 各項目の列インデックスを特定（列順が変わっても動くように）
-  const col = {
-    userId: header.indexOf("ユーザID"),
-    displayName: header.indexOf("名前"),
-    className: header.indexOf("クラス（一般／おとな美文字）"),
-    upperLimit: header.indexOf("稽古回数（初回選択）"),
-    limitThis: header.indexOf("今月の稽古回数"),
-    limitNext: header.indexOf("来月の稽古回数")
+  const userCol = {
+    userId: userHeader.indexOf("ユーザID"),
+    displayName: userHeader.indexOf("名前"),
+    className: userHeader.indexOf("クラス（一般／おとな美文字）")
   };
 
   // ユーザーを検索
   let userRow = null;
-  for (let i = 1; i < data.length; i++) {
-    if (data[i][col.userId] === userId) {
-      userRow = data[i];
+  for (let i = 1; i < userData.length; i++) {
+    if (userData[i][userCol.userId] === userId) {
+      userRow = userData[i];
       break;
     }
   }
@@ -99,14 +99,68 @@ function getUserInfoFromSheet(userId) {
     return null; // 見つからない場合はnullを返し、新規登録フローへ
   }
 
+  const userMonthlySubscriptionsSheet = SPREADSHEET.getSheetByName(SHEET_NAME_USER_MONTHLY_SUBSCRIPTIONS);
+  if (!userMonthlySubscriptionsSheet) throw new Error("userMonthlySubscriptionsシートが見つかりません。");
+
+  const userMonthlySubscriptionsData = userMonthlySubscriptionsSheet.getDataRange().getValues();
+  const userMonthlySubscriptionsHeader = userMonthlySubscriptionsData[0];
+
+  const userMonthlySubscriptionsCol = {
+    userId: userMonthlySubscriptionsHeader.indexOf("ユーザID"),
+    upperLimit: userMonthlySubscriptionsHeader.indexOf("稽古回数（デフォルト）"),
+    limitThis: userMonthlySubscriptionsHeader.indexOf("今月の稽古回数"),
+    limitNext: userMonthlySubscriptionsHeader.indexOf("来月の稽古回数")
+  };
+
+  // ユーザーの月の稽古回数を検索
+  let userMonthlySubscriptionsRow = null;
+  for (let i = 1; i < userMonthlySubscriptionsData.length; i++) {
+    if (userMonthlySubscriptionsData[i][userMonthlySubscriptionsCol.userId] === userId) {
+      userMonthlySubscriptionsRow = userMonthlySubscriptionsData[i];
+      break;
+    }
+    // 見つからない場合は、チケット利用のみの生徒（回数を「0」に固定）
+  }
+  
+  const userTicketsSheet = SPREADSHEET.getSheetByName(SHEET_NAME_USER_TICKETS);
+  if (!userTicketsSheet) throw new Error("userTicketsシートが見つかりません。");
+
+  const userTicketsData = userTicketsSheet.getDataRange().getValues();
+  const userTicketsHeader = userTicketsData[0];
+
+  const userTicketsCol = {
+    remainingNumber: userTicketsHeader.indexOf("残数"),
+    expirationDate: userTicketsHeader.indexOf("有効期限")
+  };
+  
+  // ユーザーのチケット情報を検索
+  const dateStringNow = Utilities.formatDate(new Date(), SPREADSHEET.getSpreadsheetTimeZone(), 'yyyy-MM-dd');
+  // 有効期限が残っているものだけ取得
+  let userTicketsRows = userTicketsData.slice(1).
+    filter(row => row[0] === userId
+      && Utilities.formatDate(row[userTicketsCol.expirationDate], SPREADSHEET.getSpreadsheetTimeZone(), 'yyyy-MM-dd') > dateStringNow)
+  let remainingNumberTotal = userTicketsRows.length === 0 ? -1 : userTicketsRows.map(row => row[userTicketsCol.remainingNumber]).reduce((total, num) => total + num, 0);
+
   // Workersへ送るためのデータ構造を作成
   return {
-    userId: userRow[col.userId],
-    displayName: userRow[col.displayName],
-    className: userRow[col.className],
-    upperLimitNumber: userRow[col.upperLimit],
-    upperLimitNumberThisMonth: userRow[col.limitThis],
-    upperLimitNumberNextMonth: userRow[col.limitNext]
+    userId: userRow[userCol.userId],
+    displayName: userRow[userCol.displayName],
+    className: userRow[userCol.className],
+
+    upperLimitNumber: userMonthlySubscriptionsRow == null ? 0 : userMonthlySubscriptionsRow[userMonthlySubscriptionsCol.upperLimit],
+    upperLimitNumberThisMonth: userMonthlySubscriptionsRow == null ? 0 : userMonthlySubscriptionsRow[userMonthlySubscriptionsCol.limitThis],
+    upperLimitNumberNextMonth: userMonthlySubscriptionsRow == null ? 0 : userMonthlySubscriptionsRow[userMonthlySubscriptionsCol.limitNext],
+
+    ticketInfo: {
+      dispInfo: userTicketsRows.map(row => {
+        const obj = {};
+        obj.remainingNumber = row[userTicketsCol.remainingNumber];
+        obj.expirationDate = Utilities.formatDate(row[userTicketsCol.expirationDate], SPREADSHEET.getSpreadsheetTimeZone(), 'yyyy-MM-dd');
+        return obj;
+      }),
+      // マイナスの場合は、チケット購入なし
+      remainingNumberTotal: remainingNumberTotal
+    }
   };
 }
 

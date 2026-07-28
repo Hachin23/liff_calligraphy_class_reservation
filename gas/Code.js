@@ -11,6 +11,10 @@ const SPREADSHEET = SpreadsheetApp.openById(SPREADSHEET_ID);
 const SHEET_NAME_USERS = 'users';
 // reservaionシート
 const SHEET_NAME_RESERVATIONS = 'reservations';
+// userMonthlySubscriptionsシート
+const SHEET_NAME_USER_MONTHLY_SUBSCRIPTIONS = 'userMonthlySubscriptions';
+// userTicketsシート
+const SHEET_NAME_USER_TICKETS = 'userTickets';
 // configシート
 const SHEET_NAME_CONFIG = 'config';
 // scheduleTemplateシート
