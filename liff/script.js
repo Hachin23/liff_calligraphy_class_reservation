@@ -505,18 +505,17 @@ function renderReservationCalendar(date, status, capacityData = {}, myReservatio
       });
   }
   // 上限到達時のメッセージ表示
-  if (userLimitReached) {
+  if (userLimitReached && !afterInitialRegistration) {
     upperLimitMessageArea.classList.remove("hidden");
     if (!userAttendedLimitReached) {
       // upperLimitMessageArea.innerHTML = `<div class='reservedMsg'>今月の予約上限数（${upperLimit}回）に到達しました。</div>`;
     } else {
-      if (!currentUser.ticketInfo.purchaseHistory && currentUser.upperLimitNumber === 0) {
-        upperLimitMessageArea.innerHTML = `<div class='attendedMsg'>利用情報の登録まで、しばらくお待ちください。</div>`;
-      } else {
-        //受講上限到達
-        upperLimitMessageArea.innerHTML = `<div class='attendedMsg'>今月の稽古お疲れ様でした🙌</div>`;
-      }
+      //受講上限到達
+      upperLimitMessageArea.innerHTML = `<div class='attendedMsg'>今月の稽古お疲れ様でした🙌</div>`;
     }
+  // 初期登録後のメッセージ表示
+  } else if (userLimitReached && afterInitialRegistration) {
+    upperLimitMessageArea.innerHTML = `<div class='attendedMsg'>利用情報の登録まで、しばらくお待ちください。</div>`;
   }
 }
 

@@ -55,6 +55,7 @@ function registerUserClassGAS(params) {
         remainingNumberTotal: 0,
         purchaseHistory: false
       },
+      afterInitialRegistration: true
     },
     myReservedDates: reservations.myReservedDates,
     myAttendedDates: reservations.myAttendedDates
