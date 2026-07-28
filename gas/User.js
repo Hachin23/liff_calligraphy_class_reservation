@@ -7,20 +7,13 @@ function registerUserClassGAS(params) {
   const userId = params.userId;
   const displayName = params.displayName;
   const className = params.className;
-  const upperLimitNumber = params.upperLimitNumber;
   const timestamp = new Date();
 
-  if (!userId || !displayName || !className || !upperLimitNumber) {
+  if (!userId || !displayName || !className) {
     return { success: false, message: "不足パラメータがあります" };
   }
 
-  const limitNumberInt = parseInt(upperLimitNumber, 10);
-  const limitNumberIntThisMonth = limitNumberInt;
-  const limitNumberIntNextMonth = limitNumberInt;
   const CONFIG = getConfig();
-  if (isNaN(limitNumberInt) || !CONFIG.CLASS_INFO.UPPER_LIMIT_NUMBER.includes(limitNumberInt)) {
-    return { success: false, message: "授業回数が不正です。" };
-  }
 
   // 既存ユーザーを確認（userId が存在するか）
   const searchRange = usersSheet.getRange("A:A"); // A列のみを対象
@@ -29,11 +22,11 @@ function registerUserClassGAS(params) {
   if (foundCell) {
     // 既存ユーザーがいる場合は更新
     const actualRow = foundCell.getRow();
-    const newData = [displayName, className, limitNumberInt, limitNumberIntThisMonth, limitNumberIntNextMonth, timestamp];
-    usersSheet.getRange(actualRow, 2, 1, 7).setValues(newData);
+    const newData = [displayName, className, timestamp];
+    usersSheet.getRange(actualRow, 2, 1, 4).setValues(newData);
   } else {
     // 新規ユーザーを追加
-    usersSheet.appendRow([userId, displayName, className, limitNumberInt, limitNumberIntThisMonth, limitNumberIntNextMonth, timestamp]);
+    usersSheet.appendRow([userId, displayName, className, timestamp]);
   }
 
   CacheService.getScriptCache().remove('user_' + params.userId);
@@ -52,9 +45,10 @@ function registerUserClassGAS(params) {
       userId: userId,
       displayName: displayName,
       className: className,
-      upperLimitNumber: limitNumberInt,
-      upperLimitNumberThisMonth: limitNumberIntThisMonth,
-      upperLimitNumberNextMonth: limitNumberIntNextMonth
+      // 稽古回数は、ユーザ登録後に管理者側で登録するので、登録時は「0」に設定
+      upperLimitNumber: 0,
+      upperLimitNumberThisMonth: 0,
+      upperLimitNumberNextMonth: 0
     },
     myReservedDates: reservations.myReservedDates,
     myAttendedDates: reservations.myAttendedDates

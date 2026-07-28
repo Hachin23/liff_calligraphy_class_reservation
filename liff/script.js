@@ -132,7 +132,6 @@ async function fetchInitialAppData() {
 // -----------------------------
 function setupClassSelect(userId, displayName, config) {
   const classSelect = document.getElementById("classSelect");
-  const countSelect = document.getElementById("countSelect");
   const submitBtn = document.getElementById("classSubmitBtn");
 
   const classNames = config.CLASS_INFO.CLASS_NAME;
@@ -145,55 +144,35 @@ function setupClassSelect(userId, displayName, config) {
     const idx = classSelect.value;
 
     if (idx === "") {
-      countSelect.disabled = true;
       submitBtn.classList.add("hidden");
-      countSelect.innerHTML = `
-        <option value="">クラスを先に選んでください</option>`;
       return;
     }
-
-    const upperArray = config.CLASS_INFO.UPPER_LIMIT_NUMBER;
-    countSelect.disabled = false;
-    countSelect.innerHTML = `<option value="">選択してください</option>`;
-    upperArray.forEach(n => {
-      countSelect.innerHTML += `<option value="${n}">${n}回</option>`;
-    })
-
-    submitBtn.classList.add("hidden");
-  });
-
-  countSelect.addEventListener("change", () => {
-    if (countSelect.value !== "") {
-      submitBtn.classList.remove("hidden");
-    } else {
-      submitBtn.classList.add("hidden");
-    }
+    submitBtn.classList.remove("hidden");
   });
 
   submitBtn.addEventListener("click", () => {
     const selectedClassIndex = classSelect.value;
-    const selectedUpperLimitNumber = countSelect.value;
-    confirmClassRegister(userId, displayName, selectedClassIndex, selectedUpperLimitNumber, config);
+    confirmClassRegister(userId, displayName, selectedClassIndex, config);
   });
 }
 
 // ------------------------------
 // クラス登録確認モーダル表示
 // ------------------------------
-function confirmClassRegister(userId, displayName, classIndex, upperLimit, config) {
+function confirmClassRegister(userId, displayName, classIndex, config) {
     const className = config.CLASS_INFO.CLASS_NAME[classIndex];
 
-    const message = `クラスは「${className} 月${upperLimit}回」でよろしいですか？`;
+    const message = `クラスは「${className}」でよろしいですか？`;
     showCustomModal(
         'クラス登録',
         message,
         async () => {
-            await registerUserClass(userId, displayName, classIndex, upperLimit, config);
+            await registerUserClass(userId, displayName, classIndex, config);
         }
     );
 }
 
-async function registerUserClass(userId, displayName, classIndex, upperLimitNumber, config) {
+async function registerUserClass(userId, displayName, classIndex, config) {
   const className = config.CLASS_INFO.CLASS_NAME[classIndex];
 
   // 送信データをオブジェクトでまとめる
@@ -201,8 +180,7 @@ async function registerUserClass(userId, displayName, classIndex, upperLimitNumb
     mode: "registerUserInfo",
     userId: userId,
     displayName: displayName,
-    className: className,
-    upperLimitNumber: upperLimitNumber
+    className: className
   };
   console.log("registerUserInfo payload", payload);
   
@@ -971,43 +949,6 @@ function saveToCache(capacityData, userInfoData, configData, monthKey) {
   };
   localStorage.setItem("APP_DATA_CACHE", JSON.stringify(appCache));
 }
-
-/**
- * キャッシュが有効か判定し、有効なら一式を返す
- */
-// function getValidFullCache(monthKey) {
-//   const now = Date.now();
-//   const capCache = AVAILABLE_CAPACITY_DATA[monthKey];
-//   const resCache = MY_RESERVIONS[monthKey];
-//   const attCache = MY_ATTENDED_DATES;
-
-//   // すべてのキャッシュが存在し、かつ期限内かチェック
-//   if (!capCache?.lastFetch || !resCache?.lastFetch || !attCache?.lastFetch) return null;
-
-//   const isCapExpired = (now - capCache.lastFetch) > CACHE_EXPIRATION_MS;
-//   const isResExpired = (now - resCache.lastFetch) > CACHE_EXPIRATION_MS;
-//   const isAttExpired = (now - attCache.lastFetch) > CACHE_EXPIRATION_MS;
-
-//   if (isCapExpired) {
-//     console.log(`capCacheが期限切れです: ${monthKey}`);
-//     return null;
-//   }
-//   if (isResExpired) {
-//     console.log(`resCacheが期限切れです: ${monthKey}`);
-//     return null;
-//   }
-//   if (isAttExpired) {
-//     console.log(`attCacheが期限切れです: ${monthKey}`);
-//     return null;
-//   }
-
-
-//   return {
-//     capacity: capCache.data,
-//     reserved: resCache.data,
-//     attended: attCache.data
-//   };
-// }
 
 /**
  * キャッシュが有効か判定し、有効なら一式を返す

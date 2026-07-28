@@ -63,33 +63,6 @@ const RES_LIST_COL_REMAINING_CAPACITY = 7;
 // GoogleカレンダーID(連携するカレンダーID)
 const ADMIN_CALENDAR_ID = getRequiredProperty("ADMIN_CALENDAR_ID");
 
-// ===================
-// doGet config値取得
-// ===================
-function doGet(e) {
-  const mode = e.parameter.mode;
-
-  switch (mode) {
-    // configシートから設定値を取得(使ってないけど、残しとく)
-    case "config":
-      return getConfigJSON();
-    default:
-      // modeが指定されていない場合はエラー、または空のJSONを返します
-      return ContentService
-        .createTextOutput(JSON.stringify({ success: false, message: "Invalid access mode." }))
-        .setMimeType(ContentService.MimeType.JSON);
-  }
-}
-
-// ================================
-// config取得用関数
-// ================================
-function getConfigJSON() {
-  return ContentService
-    .createTextOutput(JSON.stringify(getConfig()))
-    .setMimeType(ContentService.MimeType.JSON);
-}
-
 function getConfig() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const configSheet = ss.getSheetByName(SHEET_NAME_CONFIG);
@@ -99,15 +72,13 @@ function getConfig() {
   }
 
   const classNames = configSheet.getRange('B3:Z3').getValues()[0].filter(n => n);
-  const upperLimit = configSheet.getRange('B4:Z4').getValues()[0].filter(n => n).map(Number);
-  const firstDayOfWeek = configSheet.getRange('B5').getValue();
+  const firstDayOfWeek = configSheet.getRange('B4').getValue();
 
   // CONFIG オブジェクトを作成
   const CONFIG = {
     version: configSheet.getRange('B2').getValue(),
     CLASS_INFO: {
-      CLASS_NAME: classNames,
-      UPPER_LIMIT_NUMBER: upperLimit
+      CLASS_NAME: classNames
     },
     CALENDAR_INFO: {
       FIRST_DAY_OF_WEEK: firstDayOfWeek
