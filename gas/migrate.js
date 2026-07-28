@@ -117,7 +117,7 @@ function syncConfigToWorkers() {
       CLASS_NAME: configSheet.getRange(3, 2, 1, configSheet.getLastColumn()-1).getValues()[0].filter(String)
     },
     CALENDAR_INFO: {
-      FIRST_DAY_OF_WEEK: configSheet.getRange('B5').getValue()
+      FIRST_DAY_OF_WEEK: configSheet.getRange('B4').getValue()
     }
   };
 
