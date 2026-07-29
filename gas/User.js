@@ -23,7 +23,7 @@ function registerUserClassGAS(params) {
     // 既存ユーザーがいる場合は更新
     const actualRow = foundCell.getRow();
     const newData = [displayName, className, "", timestamp];
-    usersSheet.getRange(actualRow, 2, 1, 5).setValues(newData);
+    usersSheet.getRange(actualRow, 2, 1, 4).setValues(newData);
   } else {
     // 新規ユーザーを追加
     usersSheet.appendRow([userId, displayName, className, "",timestamp]);
@@ -64,6 +64,39 @@ function registerUserClassGAS(params) {
   // 非同期でWorkersも更新（次回の起動用）
   syncUserFullData(userId);
 
+  try {
+    sendLineMessage(
+      userId,
+      `${displayName}さん、ご登録ありがとうございます。
+  教室側で利用設定を行います。
+  設定が終わり次第、ご連絡いたします。`
+    );
+  } catch(e) {
+    logWarn({
+      type: "LINE通知エラー(ユーザー)",
+      targetUserId: userId,
+      message: e.message
+    });
+  }
+
+  const adminUserId = getRequiredProperty("ADMIN_LINE_USER_ID");
+  try {
+    sendAdminLineMessage(
+      `📢 新規ユーザーが登録されました。
+
+      ・氏名：${displayName}
+      ・クラス：${className}
+
+      利用設定（月の稽古回数・チケット数）を行ってください。`
+    );
+  } catch(e) {
+    logWarn({
+      type: "LINE通知エラー(管理者)",
+      targetUserId: adminUserId,
+      message: e.message
+    });
+  }
+
   return { 
     success: true, 
     userInfo: userInfoFull,      // 階層をWorkersの返却形式に合わせる
@@ -77,7 +110,6 @@ function registerUserClassGAS(params) {
  * 補助：現在の残席状況をスプレッドシートから直接取得する（Workersを介さない）
  */
 function getCapacityData() {
-  const today = new Date();
   const listSheet = SPREADSHEET.getSheetByName(SHEET_NAME_RESERVATIONS_LIST);  
   const ssTimezone = SPREADSHEET.getSpreadsheetTimeZone();
 
