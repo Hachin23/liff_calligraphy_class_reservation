@@ -67,9 +67,11 @@ function registerUserClassGAS(params) {
   try {
     sendLineMessage(
       userId,
-      `${displayName}さん、ご登録ありがとうございます。
-  教室側で利用設定を行います。
-  設定が終わり次第、ご連絡いたします。`
+`${displayName}さん、
+ご登録ありがとうございます。
+
+教室側で利用設定を行います。
+設定が完了しましたら、ご連絡いたします。`
     );
   } catch(e) {
     logWarn({
@@ -80,14 +82,16 @@ function registerUserClassGAS(params) {
   }
 
   const adminUserId = getRequiredProperty("ADMIN_LINE_USER_ID");
+  const registerDate = Utilities.formatDate(timestamp, SPREADSHEET.getSpreadsheetTimeZone(), "yyyy/MM/dd HH:mm");
   try {
     sendAdminLineMessage(
-      `📢 新規ユーザーが登録されました。
+`新規ユーザーが登録されました。
 
-      ・氏名：${displayName}
-      ・クラス：${className}
+・氏名：${displayName}
+・クラス：${className}
+・登録日時：${registerDate}
 
-      利用設定（月の稽古回数・チケット数）を行ってください。`
+月謝・チケット情報を設定してください。`
     );
   } catch(e) {
     logWarn({
