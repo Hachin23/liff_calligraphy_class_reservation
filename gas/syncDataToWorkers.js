@@ -129,13 +129,14 @@ function getUserInfoFromSheet(userId) {
   const userTicketsHeader = userTicketsData[0];
 
   const userTicketsCol = {
+    userId: userTicketsHeader.indexOf("ユーザID"),
     remainingNumber: userTicketsHeader.indexOf("残数"),
     expirationDate: userTicketsHeader.indexOf("有効期限")
   };
   
   // ユーザーのチケット情報を検索
   const dateStringNow = Utilities.formatDate(new Date(), SPREADSHEET.getSpreadsheetTimeZone(), 'yyyy-MM-dd');
-  let userTicketsRows = userTicketsData.slice(1).filter(row => row[0] === userId)
+  let userTicketsRows = userTicketsData.slice(1).filter(row => row[userTicketsCol.userId] === userId)
   // 有効期限が残っているものだけ取得
   let validUserTicketsRows = userTicketsRows.filter(row => Utilities.formatDate(row[userTicketsCol.expirationDate], SPREADSHEET.getSpreadsheetTimeZone(), 'yyyy-MM-dd') > dateStringNow)
   let remainingNumberTotal = validUserTicketsRows.length === 0 ? 0 : validUserTicketsRows.map(row => row[userTicketsCol.remainingNumber]).reduce((total, num) => total + num, 0);
