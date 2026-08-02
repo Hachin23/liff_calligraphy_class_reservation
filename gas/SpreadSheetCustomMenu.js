@@ -687,29 +687,23 @@ function deletePastReservations() {
 function monthlyMaintenance(event) {
   if (event) {
     const ss = SpreadsheetApp.getActiveSpreadsheet();
-    const userSheet = ss.getSheetByName("users");
+    const userSheet = ss.getSheetByName(SHEET_NAME_USER_MONTHLY_SUBSCRIPTIONS);
     const userData = userSheet.getDataRange().getValues();
     
     // 列の番号（実際のシートに合わせて調整してください）
-    const COL_DEFAULT = 3; // D列：デフォルト回数
-    const COL_CURRENT = 4; // E列：今月の回数
-    const COL_NEXT    = 5; // F列：来月の回数
+    const COL_DEFAULT = 2; // D列：デフォルト回数
+    const COL_CURRENT = 3; // E列：今月の回数
+    const COL_NEXT    = 4; // F列：来月の回数
     
-    // 2行目から全ユーザをループ
     for (let i = 1; i < userData.length; i++) {
-      const defaultVal = userData[i][COL_DEFAULT];
-      const nextMonthVal = userData[i][COL_NEXT];
-      
-      // 1. 来月の回数を今月にスライド
-      userSheet.getRange(i + 1, COL_CURRENT + 1).setValue(nextMonthVal);
-      
-      // 2. 来月の回数をデフォルト値でリセット
-      userSheet.getRange(i + 1, COL_NEXT + 1).setValue(defaultVal);
+      userData[i][COL_CURRENT] = userData[i][COL_NEXT];
+      userData[i][COL_NEXT] = userData[i][COL_DEFAULT];
     }
+    userSheet
+    .getRange(1, 1, userData.length, userData[0].length)
+    .setValues(userData);
   }
 }
-
-
 
 /**
  * 1時間ごとに実行されるカレンダー連携・メンテナンス関数。
@@ -1013,6 +1007,35 @@ function handleEdit(e) {
   if (sheetName === SHEET_NAME_RESERVATIONS_LIST) {
     console.log("残席情報の更新を検知しました。");
     syncCapacityToWorkers();
+    return;
+  }
+
+  // userMonthlySubscriptionsシートが変更された場合
+  if (sheetName === SHEET_NAME_USER_MONTHLY_SUBSCRIPTIONS) {
+    const row = range.getRow();
+    // ヘッダー（1行目）以外の編集なら実行
+    if (row > 1) {
+      // 編集された行のUserIDを取得（A列にある想定）
+      const userId = sheet.getRange(row, 1).getValue();
+      if (userId) {
+        console.log("稽古回数の更新を検知しました。");
+        syncUserFullData(userId);
+      }
+    }
+    return;
+  }
+  // userTicketsシートが変更された場合
+  if (sheetName === SHEET_NAME_USER_TICKETS) {
+    const row = range.getRow();
+    // ヘッダー（1行目）以外の編集なら実行
+    if (row > 1) {
+      // 編集された行のUserIDを取得（B列にある想定）
+      const userId = sheet.getRange(row, 2).getValue();
+      if (userId) {
+        console.log("チケット情報の更新を検知しました。");
+        syncUserFullData(userId);
+      }
+    }
     return;
   }
 }
