@@ -5,18 +5,18 @@
 // 予約可能日作成する月の範囲（2 = 来月まで、3 = 再来月まで）
 const GENERATE_RESERVATIONS_LIST_MONTH = 3 //　2か月だと作成する月によっては、作成されない授業が発生する可能性があるので、念のため3か月分
 
-
 // ====================================
 // GAS カスタムメニューとフォーム表示関数
 // ====================================
 function onOpen() {
   SpreadsheetApp.getUi()
     .createMenu('レッスン管理')
+    .addItem('代理予約', 'openAdminBookingForm')
+    .addItem('代理キャンセル', 'openAdminCancleForm')
+    .addItem('チケット登録', 'openAdminTicketsPurchaseForm')
+    .addItem('稽古回数登録', 'openAdminMonthlySubscriptionSettingForm')
+    .addSeparator() // 区切り線を追加
     .addItem('例外日の追加・設定', 'openExceptionForm')
-    .addSeparator() // 区切り線を追加
-    .addItem('代理予約 (管理者操作)', 'openAdminBookingForm')
-    .addItem('代理キャンセル (管理者操作)', 'openAdminCancleForm')
-    .addSeparator() // 区切り線を追加
     .addItem('予約可能日リストを生成', 'executeReservationListGeneration')
     .addToUi();
 }
@@ -60,6 +60,28 @@ function openAdminCancleForm() {
   // AdminCancleForm.html ファイルを事前に作成してください
   const html = HtmlService.createHtmlOutputFromFile('AdminCancleForm') 
       .setTitle('代理キャンセル')
+      .setWidth(300);
+  SpreadsheetApp.getUi().showSidebar(html);
+}
+
+/**
+ * チケット登録フォームを開く
+ */
+function openAdminTicketsPurchaseForm() {
+  // AdminTicketsPurchaseForm.html ファイルを事前に作成してください
+  const html = HtmlService.createHtmlOutputFromFile('AdminTicketsPurchaseForm') 
+      .setTitle('チケット登録')
+      .setWidth(300);
+  SpreadsheetApp.getUi().showSidebar(html);
+}
+
+/**
+ * 稽古回数登録フォームを開く
+ */
+function openAdminMonthlySubscriptionSettingForm() {
+  // AdminMonthlySubscriptionSettingForm.html ファイルを事前に作成してください
+  const html = HtmlService.createHtmlOutputFromFile('AdminMonthlySubscriptionSettingForm') 
+      .setTitle('稽古回数登録')
       .setWidth(300);
   SpreadsheetApp.getUi().showSidebar(html);
 }
@@ -179,6 +201,124 @@ function adminProxyCancel(userId, reservationId) {
     return "エラーが発生しました: " + e.toString();
   }
 }
+
+// ========================================
+// チケット回数と値段をスクリプトプロパティから取得
+// ========================================
+function getTicketPrices() {
+
+  const value = PropertiesService
+    .getScriptProperties()
+    .getProperty("TICKET_PRICES");
+
+  if (!value) return [];
+
+  return value.split(",").map(item => {
+    const [count, price] = item.split(":");
+    return {
+      count: Number(count),
+      price: Number(price)
+    };
+  }).sort((a, b) => a.count - b.count);
+}
+
+function getTicketPriceMap() {
+  const value = PropertiesService
+    .getScriptProperties()
+    .getProperty("TICKET_PRICES");
+
+  return value.split(",").reduce((obj, item) => {
+    const [count, price] = item.split(":");
+    obj[count] = Number(price);
+    return obj;
+  }, {});
+}
+
+function saveTicket(data) {
+
+  const sheet = SPREADSHEET.getSheetByName(SHEET_NAME_USER_TICKETS);
+  const ticketId = Utilities.getUuid();
+  const priceMap = getTicketPriceMap();
+  const price = priceMap[data.count];
+
+  if (!price) {
+    throw new Error("料金設定が存在しません。");
+  }
+
+  const purchaseDate = new Date(data.purchaseDate);
+  const expireDate = new Date(purchaseDate);
+  const months = data.count <= 3 ? 3 : 6;
+  expireDate.setMonth(expireDate.getMonth() + months + 1);
+  expireDate.setDate(0);
+  const expireDateStr = Utilities.formatDate(
+  expireDate,
+  Session.getScriptTimeZone(),
+  "yyyy/MM/dd"
+  );
+  const purchaseDateStr = Utilities.formatDate(
+  purchaseDate,
+  Session.getScriptTimeZone(),
+  "yyyy/MM/dd"
+  );
+
+  const student = getStudentByLineId(data.userId);
+  const now = new Date();
+
+  sheet.appendRow([
+    ticketId,
+    data.userId,
+    student.name,
+    data.count,
+    price,
+    data.count,
+    purchaseDateStr,
+    expireDateStr,
+    "有効",
+    now,
+    now,
+    data.memo
+  ]);
+}
+
+function getStudentByLineId(lineId) {
+  const students = getStudentListForUI();
+  const student = students.find(s => s.lineId === lineId);
+  if (!student) {
+    throw new Error("生徒が見つかりません。");
+  }
+  return student;
+}
+
+// ======================
+// 月の稽古回数を登録する処理
+// ======================
+function saveMonthlyLesson(data){
+  const sheet = SPREADSHEET.getSheetByName(SHEET_NAME_USER_MONTHLY_SUBSCRIPTIONS);
+  if(!data.userId){
+    throw new Error("生徒を選択してください");
+  }
+  const values = sheet.getDataRange().getValues();
+  // 既存チェック
+  const exists = values.some((row,index)=>{
+    if(index === 0) return false;
+    return row[0] === data.userId;
+  });
+
+  if(exists){
+    throw new Error("登録済みの生徒です");
+  }
+  sheet.appendRow([
+    data.userId,
+    data.userName,
+    data.defaultCount,
+    data.currentCount,
+    data.nextCount
+  ]);
+}
+
+
+
+
 
 // ====================================
 // 例外日データ書き込みロジック

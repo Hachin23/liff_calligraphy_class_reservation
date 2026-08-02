@@ -1,9 +1,131 @@
 <!DOCTYPE html>
-<html>
-  <head>
-    <base target="_top">
-  </head>
-  <body>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>チケット登録</title>
+
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: sans-serif; background: #f5f5f5; margin: 0; padding: 0px; }
+    .container { max-width: 700px; margin: auto; background: #fff; padding: 12px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,.15); }
+    h2 { text-align: center; margin-bottom: 24px; }
+    .form-group { margin-bottom: 18px; }
+    label { display: block; font-weight: bold; margin-bottom: 6px; }
+    input, select, textarea { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 16px;}
+    textarea{ resize: vertical; }
+    button { width: 100%; padding: 14px; background: #2196F3; color: white; border: none; border-radius: 6px; font-size: 16px; cursor: pointer; }
+    button:hover{ background:#1976D2; }
+    .price{ margin-top:8px; color:#666; font-size:15px; }
+  </style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <div id="loader">データを読み込み中...</div>
+
+    <form id="ticketForm" style="display:none;">
+
+        <div class="form-group">
+          <label for="studentSelect">生徒</label>
+          <select id="studentSelect" required>
+              <option value="">選択してください</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+            <label>チケット種類</label>
+            <select id="ticketCount" required>
+                <option value="">選択してください</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>購入日</label>
+            <input type="date" id="purchaseDate" required>
+        </div>
+
+        <div class="form-group">
+            <label>備考</label>
+            <textarea id="memo" rows="3"></textarea>
+        </div>
+
+        <button type="submit">
+            登録
+        </button>
+
+    </form>
+
+</div>
+
+<script>
+
+window.onload = function() {
+  // 1. 初期データ（生徒一覧と全予約枠）を並列で取得
+  Promise.all([
+    new Promise(resolve => google.script.run.withSuccessHandler(resolve).getStudentListForUI()),
+    new Promise(resolve => google.script.run.withSuccessHandler(resolve).getTicketPrices())
+  ]).then(([students, ticketPrices]) => {
+    // 生徒セレクトボックスの構築
+    const sSelect = document.getElementById('studentSelect');
+    students.forEach(s => {
+      const opt = document.createElement('option');
+      opt.value = s.lineId;
+      opt.textContent = s.name;
+      opt.dataset.className = s.className;
+      sSelect.appendChild(opt);
+    });
+
+    // チケット一覧
+    createTicketSelect(ticketPrices);
     
-  </body>
+    // UI表示
+    document.getElementById('loader').style.display = 'none';
+    document.getElementById('ticketForm').style.display = 'block';
+  });
+};
+
+let ticketPrices = [];
+
+function createTicketSelect(list) {
+    ticketPrices = list;
+    const select = document.getElementById("ticketCount");
+    list.forEach(ticket => {
+        const option = document.createElement("option");
+        option.value = ticket.count;
+        option.textContent =
+            `${ticket.count}回券（¥${ticket.price.toLocaleString()}）`;
+        select.appendChild(option);
+    });
+}
+
+document.getElementById("purchaseDate").value = new Date().toISOString().split("T")[0];
+
+document.getElementById("ticketForm").addEventListener("submit",(e)=>{
+  e.preventDefault();
+  const data = {
+      userId: document.getElementById("studentSelect").value,
+      userName: document.getElementById("studentSelect").options[document.getElementById("studentSelect").selectedIndex].text,
+      count: Number(document.getElementById("ticketCount").value),
+      purchaseDate: document.getElementById("purchaseDate").value,
+      memo: document.getElementById("memo").value
+  };
+  if(!confirm(`チケット購入者：${data.userName}\nチケット：${data.count}回券\n購入日：${data.purchaseDate}\n備考：${data.memo}\nこの内容でチケット登録しますか？`)) return;
+
+  google.script.run
+  .withSuccessHandler(() => {
+    alert("チケット登録完了しました。");
+    document.getElementById("ticketForm").reset();
+  })
+  .withFailureHandler(err => {
+    alert(err.message);
+  })
+  .saveTicket(data);
+});
+
+</script>
+
+</body>
 </html>
