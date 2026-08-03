@@ -1058,8 +1058,9 @@ function setupTicketLongPress(ticketInfo) {
   if (!userTicketInfo) return;
 
   let timer;
-  userTicketInfo.addEventListener("touchstart", function(e){
-      timer = setTimeout(() => {
+  userTicketInfo.addEventListener("touchstart", function (e) {
+    console.log("touchStart")
+    timer = setTimeout(() => {
       const ticketDetail = ticketInfo.dispInfo
         .map(ticket => `
         残数：${ticket.remainingNumber}回<br>
@@ -1075,10 +1076,10 @@ function setupTicketLongPress(ticketInfo) {
       popup.style.left = `${rect.left}px`;
       popup.style.top = `${rect.bottom + window.scrollY}px`;
       popup.style.display = "block";
-
     }, 500);
   });
-  userTicketInfo.addEventListener("touchend", function(){
+  userTicketInfo.addEventListener("touchend", function () {
+    console.log("touchEnd")
     clearTimeout(timer);
     popup.style.display = "none";
   });
