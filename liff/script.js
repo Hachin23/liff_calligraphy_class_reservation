@@ -397,7 +397,7 @@ function renderReservationCalendar(date, status, capacityData = {}, myReservatio
           const keys = Object.keys(dateTimeObj);
           return keys.some(key => key.includes(monthString));
         }).length;
-  const [userAttendedLimitReached, userLimitReached] = checkUserLimitReached(currentUser.ticketInfo, upperLimit, AttendedCount, reservedCount);
+  const { userAttendedLimitReached, userLimitReached } = checkUserLimitReached(currentUser.ticketInfo, upperLimit, AttendedCount, reservedCount);
 
   // ⭐ 日付セルを作成
   for (let day = 1; day <= lastDayOfMonth.getDate(); day++) {
@@ -550,7 +550,7 @@ function renderAvailableClassesList(classes, dateString, monthKey) {
   const monthReservation = MY_RESERVIONS[monthKey]?.data || [];
   const reservedCount = monthReservation.length;
   const AttendedCount = MY_ATTENDED_DATES.data.filter(item => item.includes(monthKey)).length;
-  const userLimitReached = (reservedCount + AttendedCount) == upperLimit;
+  const { userLimitReached } = checkUserLimitReached(currentUser.ticketInfo, upperLimit, AttendedCount, reservedCount);
 
   classes.forEach(item => {
     // MY_RESERVIONSから取得して、予約済み時間を特定
@@ -1120,5 +1120,5 @@ function checkUserLimitReached(ticketInfo, upperLimit, AttendedCount, reservedCo
     userAttendedLimitReached = monthlyFinished && (AttendedCount > 0 && reservedCount == 0 && ticketEmpty);
     userLimitReached = monthlyReservedFinished && ((AttendedCount > 0 || reservedCount > 0) && ticketEmpty);
   }
-  return [userAttendedLimitReached, userLimitReached]
+  return { userAttendedLimitReached, userLimitReached };
 }
