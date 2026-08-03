@@ -1057,30 +1057,24 @@ function setupTicketLongPress(ticketInfo) {
   const popup = document.getElementById("ticketPopup");
   if (!userTicketInfo) return;
 
-  let timer;
-  userTicketInfo.addEventListener("touchstart", function (e) {
-    console.log("touchStart")
-    timer = setTimeout(() => {
-      const ticketDetail = ticketInfo.dispInfo
-        .map(ticket => `
-        残数：${ticket.remainingNumber}回<br>
-        有効期限：${ticket.expirationDate}
-      `)
-      .join("<hr>");
+  userTicketInfo.addEventListener("click  ", function (e) {
+    e.stopPropagation();
+    const ticketDetail = ticketInfo.dispInfo
+      .map(ticket => `
+      残数：${ticket.remainingNumber}回<br>
+      有効期限：${ticket.expirationDate}
+    `)
+    .join("<hr>");
 
-      popup.innerHTML = `
-        🎫 チケット<br>
-        ${ticketDetail}
-      `;
-      const rect = userTicketInfo.getBoundingClientRect();
-      popup.style.left = `${rect.left}px`;
-      popup.style.top = `${rect.bottom + window.scrollY}px`;
-      popup.style.display = "block";
-    }, 500);
+    popup.innerHTML = `
+      🎫 チケット<br>
+      ${ticketDetail}
+    `;
+    popup.style.display = "block";
   });
-  userTicketInfo.addEventListener("touchend", function () {
-    console.log("touchEnd")
-    clearTimeout(timer);
-    popup.style.display = "none";
+  document.addEventListener("click", function (e) {
+    if (!popup.contains(e.target) && e.target.id !== "userTicketInfo") {
+      popup.style.display = "none";
+    }
   });
 }

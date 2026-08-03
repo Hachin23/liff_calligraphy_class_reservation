@@ -85,12 +85,18 @@ select:focus {
 /* 個別にチケットの回数と期限を表示 */
 .ticket-popup {
   display: none;
-  position: absolute;
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
   background: white;
   border: 1px solid #ccc;
   border-radius: 8px;
-  padding: 10px;
-  z-index: 100;
+  padding: 16px;
+  z-index: 1000;
+  min-width: 220px;
+  font-size: 0.8em;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
 }
 
 
