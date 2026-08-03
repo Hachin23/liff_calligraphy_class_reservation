@@ -82,6 +82,18 @@ select:focus {
     font-weight: 600;
 }
 
+/* 個別にチケットの回数と期限を表示 */
+.ticket-popup {
+  display: none;
+  position: absolute;
+  background: white;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  padding: 10px;
+  z-index: 100;
+}
+
+
 /* ==================================== */
 /* クラス・回数選択エリア */
 /* ==================================== */

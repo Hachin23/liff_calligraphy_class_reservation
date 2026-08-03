@@ -1018,11 +1018,29 @@ function getInitDispFullCache(monthKey) {
 
 function updateClassInfoUI(currentUser, monthKey) {
   const currentDate = new Date();
-  const currentMonthKey = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`; 
-  const upperLimitLabel = currentMonthKey === monthKey ? currentUser.upperLimitNumberThisMonth : currentUser.upperLimitNumberNextMonth;
-  const monthlySubscription = currentUser.upperLimitNumber === 0 ? "" : `🗓️ 月${upperLimitLabel}回`;
-  const ticketInfo = currentUser.ticketInfo.purchaseHistory === true ? `🎫 残${currentUser.ticketInfo.remainingNumberTotal}回` : "";
-  classInfo.innerHTML = `<span id='userName'>   👤 ${currentUser.displayName}</span><span id='userClassName'>  ┊  🖌️ ${currentUser.className} ${monthlySubscription}</span><span id='userTicketInfo'>${ticketInfo}</span>`;
+  const currentMonthKey = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`;
+  
+  const upperLimitLabel = currentMonthKey === monthKey
+    ? currentUser.upperLimitNumberThisMonth
+    : currentUser.upperLimitNumberNextMonth;
+ 
+  const monthlySubscription = currentUser.upperLimitNumber === 0
+    ? ""
+    : `🗓️ 月${upperLimitLabel}回`;
+  
+  const ticketInfo = currentUser.ticketInfo.purchaseHistory === true
+    ? `<span id='userTicketInfo'>🎫 残${currentUser.ticketInfo.remainingNumberTotal}回</span>`
+    : "";
+  
+  classInfo.innerHTML = `
+    <span id='userName'>   👤 ${currentUser.displayName}</span>
+    <span id='userClassName'>  ┊  🖌️ ${currentUser.className} ${monthlySubscription}</span>
+    ${ticketInfo}
+  `;
+
+  if (ticketInfo) {
+    setupTicketLongPress(currentUser.ticketInfo);
+  }
 }
 
 async function getWorkersDataJson(userId) {
@@ -1030,4 +1048,38 @@ async function getWorkersDataJson(userId) {
   const response = await fetch(url);
   const json = await response.json();
   return json;
+}
+
+
+function setupTicketLongPress(ticketInfo) {
+
+  const userTicketInfo = document.getElementById("userTicketInfo");
+  const popup = document.getElementById("ticketPopup");
+  if (!userTicketInfo) return;
+
+  let timer;
+  userTicketInfo.addEventListener("touchstart", function(e){
+      timer = setTimeout(() => {
+      const ticketDetail = ticketInfo.dispInfo
+        .map(ticket => `
+        残数：${ticket.remainingNumber}回<br>
+        有効期限：${ticket.expirationDate}
+      `)
+      .join("<hr>");
+
+      popup.innerHTML = `
+        🎫 チケット<br>
+        ${ticketDetail}
+      `;
+      const rect = userTicketInfo.getBoundingClientRect();
+      popup.style.left = `${rect.left}px`;
+      popup.style.top = `${rect.bottom + window.scrollY}px`;
+      popup.style.display = "block";
+
+    }, 500);
+  });
+  userTicketInfo.addEventListener("touchend", function(){
+    clearTimeout(timer);
+    popup.style.display = "none";
+  });
 }
