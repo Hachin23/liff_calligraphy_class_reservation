@@ -59,7 +59,9 @@ async function main() {
           return;
       }
       // モーダル設定
-      setupModalListeners();
+    setupModalListeners();
+    // チケット部分のクリック設定
+    setupTicketClickListener();
 
       console.time("初期表示までの時間 start");
 
@@ -1039,7 +1041,7 @@ function updateClassInfoUI(currentUser, monthKey) {
   `;
 
   if (ticketInfo) {
-    setupTicketLongPress(currentUser.ticketInfo);
+    setupTicketClick(currentUser.ticketInfo);
   }
 }
 
@@ -1051,13 +1053,13 @@ async function getWorkersDataJson(userId) {
 }
 
 
-function setupTicketLongPress(ticketInfo) {
+function setupTicketClick(ticketInfo) {
 
   const userTicketInfo = document.getElementById("userTicketInfo");
   const popup = document.getElementById("ticketPopup");
   if (!userTicketInfo) return;
 
-  userTicketInfo.addEventListener("click  ", function (e) {
+  userTicketInfo.addEventListener("click", function (e) {
     e.stopPropagation();
     const ticketDetail = ticketInfo.dispInfo
       .map(ticket => `
@@ -1072,8 +1074,20 @@ function setupTicketLongPress(ticketInfo) {
     `;
     popup.style.display = "block";
   });
+}
+
+function setupTicketClickListener() {
   document.addEventListener("click", function (e) {
-    if (!popup.contains(e.target) && e.target.id !== "userTicketInfo") {
+    const popup = document.getElementById("ticketPopup");
+    const userTicketInfo = document.getElementById("userTicketInfo");
+
+    if (!popup || popup.style.display !== "block") return;
+
+    if (
+      popup.style.display === "block" &&
+      !popup.contains(e.target) &&
+      e.target !== userTicketInfo
+    ) {
       popup.style.display = "none";
     }
   });
