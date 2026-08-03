@@ -397,10 +397,7 @@ function renderReservationCalendar(date, status, capacityData = {}, myReservatio
           const keys = Object.keys(dateTimeObj);
           return keys.some(key => key.includes(monthString));
         }).length;
-  // 受講済みで上限到達か
-  const userAttendedLimitReached = AttendedCount === upperLimit;
-  // 予約数と受講数の合計で上限到達か
-  const userLimitReached = (reservedCount + AttendedCount) == upperLimit;
+  const [userAttendedLimitReached, userLimitReached] = checkUserLimitReached(currentUser.ticketInfo, upperLimit, AttendedCount, reservedCount);
 
   // ⭐ 日付セルを作成
   for (let day = 1; day <= lastDayOfMonth.getDate(); day++) {
@@ -508,7 +505,7 @@ function renderReservationCalendar(date, status, capacityData = {}, myReservatio
   }
   // 上限到達時のメッセージ表示
   if (userLimitReached && !currentUser.afterInitialRegistration) {
-    if (userAttendedLimitReached && currentUser.upperLimitNumber !== 0) {
+    if (userAttendedLimitReached) {
       upperLimitMessageArea.classList.remove("hidden");
       //受講上限到達
       upperLimitMessageArea.innerHTML = `<div class='attendedMsg'>今月の稽古お疲れ様でした🙌</div>`;
@@ -1091,4 +1088,37 @@ function setupTicketClickListener() {
       popup.style.display = "none";
     }
   });
+}
+
+
+function checkUserLimitReached(ticketInfo, upperLimit, AttendedCount, reservedCount) {
+  // 受講済みで上限到達か
+  let userAttendedLimitReached;
+  // 予約数と受講数の合計で上限到達か
+  let userLimitReached;
+
+  const hasTicket = ticketInfo.purchaseHistory;
+  const ticketEmpty = ticketInfo.remainingNumberTotal === 0;
+  const hasMonthly = upperLimit > 0;
+  const monthlyFinished = AttendedCount === upperLimit;
+  const monthlyReservedFinished = AttendedCount + reservedCount === upperLimit;
+
+    // 登録後の場合
+  if (!hasTicket && !hasMonthly) {
+    userAttendedLimitReached = monthlyFinished;
+    userLimitReached = monthlyReservedFinished;
+  } else if (!hasTicket && hasMonthly) {
+    // 月稽古の場合
+    userAttendedLimitReached = monthlyFinished;
+    userLimitReached = monthlyReservedFinished;
+  } else if (hasTicket && !hasMonthly) {
+    // チケット利用のみの場合
+    userAttendedLimitReached = AttendedCount > 0 && reservedCount === 0 && ticketEmpty;
+    userLimitReached = (AttendedCount > 0 || reservedCount > 0) && ticketEmpty;
+  } else {
+    // 月稽古 + チケット利用の場合
+    userAttendedLimitReached = monthlyFinished && (AttendedCount > 0 && reservedCount == 0 && ticketEmpty);
+    userLimitReached = monthlyReservedFinished && ((AttendedCount > 0 || reservedCount > 0) && ticketEmpty);
+  }
+  return [userAttendedLimitReached, userLimitReached]
 }
