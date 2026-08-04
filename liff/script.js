@@ -641,7 +641,7 @@ function renderAvailableClassesList(classes, dateString, monthKey) {
         `;
       }
     } else {
-      let reason = isFull ? '満席' : `稽古予約回数の上限（${upperLimit}回）到達`;
+      let reason = isFull ? '満席' : `稽古予約回数の上限到達`;
          noButtonHtml = `
             <span class="status-text is-unavailable">${item.startTime} - ${item.endTime}</span>
             <span class="remaining-class-number"> 👤 残${item.remainingCapacity}席</span><br>
@@ -1125,12 +1125,12 @@ function checkUserLimitReached(ticketInfo, upperLimit, AttendedCount, reservedCo
     userLimitReached = monthlyReservedFinished;
   } else if (hasTicket && !hasMonthly) {
     // チケット利用のみの場合
-    userAttendedLimitReached = AttendedCount > 0 && reservedCount === 0 && ticketEmpty;
-    userLimitReached = (AttendedCount > 0 || reservedCount > 0) && ticketEmpty;
+    userAttendedLimitReached = AttendedCount >= 0 && reservedCount === 0 && ticketEmpty;
+    userLimitReached = (AttendedCount >= 0 || reservedCount >= 0) && ticketEmpty;
   } else {
     // 月稽古 + チケット利用の場合
-    userAttendedLimitReached = monthlyFinished && (AttendedCount > 0 && reservedCount == 0 && ticketEmpty);
-    userLimitReached = monthlyReservedFinished && ((AttendedCount > 0 || reservedCount > 0) && ticketEmpty);
+    userAttendedLimitReached = monthlyFinished && (AttendedCount >= 0 && reservedCount == 0 && ticketEmpty);
+    userLimitReached = monthlyReservedFinished && ((AttendedCount >= 0 || reservedCount >= 0) && ticketEmpty);
   }
   return { userAttendedLimitReached, userLimitReached };
 }
