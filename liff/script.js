@@ -503,15 +503,19 @@ function renderReservationCalendar(date, status, capacityData = {}, myReservatio
           cell.addEventListener('click', (event) => selectDate(event.currentTarget.dataset.date));
       });
   }
+
+  const hasTicket = currentUser.ticketInfo.purchaseHistory;
+  const hasMonthly = upperLimit > 0;
+
   // 上限到達時のメッセージ表示
-  if (userLimitReached && !currentUser.afterInitialRegistration) {
+  if ((hasTicket || hasMonthly) && userLimitReached) {
     if (userAttendedLimitReached) {
       upperLimitMessageArea.classList.remove("hidden");
       //受講上限到達
       upperLimitMessageArea.innerHTML = `<div class='attendedMsg'>今月の稽古お疲れ様でした🙌</div>`;
     }
   // 初期登録後のメッセージ表示
-  } else if (userLimitReached && currentUser.afterInitialRegistration) {
+  } else if ((!hasTicket && !hasMonthly) && userLimitReached) {
     upperLimitMessageArea.classList.remove("hidden");
     upperLimitMessageArea.innerHTML = `<div class='attendedMsg'>利用情報の登録まで、しばらくお待ちください。</div>`;
   }
@@ -1105,8 +1109,8 @@ function checkUserLimitReached(ticketInfo, upperLimit, AttendedCount, reservedCo
 
     // 登録後の場合
   if (!hasTicket && !hasMonthly) {
-    userAttendedLimitReached = false;
-    userLimitReached = false;
+    userAttendedLimitReached = monthlyFinished;
+    userLimitReached = monthlyReservedFinished;
   } else if (!hasTicket && hasMonthly) {
     // 月稽古の場合
     userAttendedLimitReached = monthlyFinished;
