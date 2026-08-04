@@ -513,7 +513,7 @@ function renderReservationCalendar(date, status, capacityData = {}, myReservatio
       if (hasMonthly) {
         upperLimitMessageArea.innerHTML = `<div class='attendedMsg'>今月の稽古お疲れ様でした🙌</div>`;
       } else {
-        upperLimitMessageArea.innerHTML = `<div class='attendedMsg'>チケットを追加購入すると、引き続きご利用いただけます🌸</div>`;
+        upperLimitMessageArea.innerHTML = `<div class='attendedMsg'>チケット追加購入で、引き続きご利用いただけます🌸</div>`;
       }
     }
   } else if (hasMonthly && userLimitReached) {

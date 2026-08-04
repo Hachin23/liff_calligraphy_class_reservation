@@ -278,6 +278,7 @@ function saveTicket(data) {
     now,
     data.memo
   ]);
+  syncUserFullData(data.userId);
 }
 
 function getStudentByLineId(lineId) {
@@ -314,6 +315,7 @@ function saveMonthlyLesson(data){
     data.currentCount,
     data.nextCount
   ]);
+  syncUserFullData(data.userId);
 }
 
 
