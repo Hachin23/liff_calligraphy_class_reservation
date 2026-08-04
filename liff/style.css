@@ -772,7 +772,7 @@ select:focus {
 .attendedMsg {
     background-color: #FFFACD; /* レモンシフォン */
     color: #94713E; /* ダークゴールド */
-    font-size: 0.9em;
+    font-size: 0.8em;
     padding: 5px;
     margin-bottom: 3px; 
     border-radius: 8px;
