@@ -1105,8 +1105,8 @@ function checkUserLimitReached(ticketInfo, upperLimit, AttendedCount, reservedCo
 
     // 登録後の場合
   if (!hasTicket && !hasMonthly) {
-    userAttendedLimitReached = monthlyFinished;
-    userLimitReached = monthlyReservedFinished;
+    userAttendedLimitReached = false;
+    userLimitReached = false;
   } else if (!hasTicket && hasMonthly) {
     // 月稽古の場合
     userAttendedLimitReached = monthlyFinished;
