@@ -193,8 +193,8 @@ function getReservationsForUI() {
 function adminProxyCancel(userId, reservationId) {
   try {
     // デバッグ・確認用メッセージ
-    handleCancelReservation({ userId: userId, reservationId: reservationId, admin: true });
-    const msg = `【キャンセル完了】\n生徒ID: ${userId}\n予約ID: ${reservationId}`;
+    result = handleCancelReservation({ userId: userId, reservationId: reservationId, admin: true });
+    const msg = `${result.message}\n生徒ID: ${userId}\n予約ID: ${reservationId}`;
     console.log(msg);
     return msg;
   } catch (e) {

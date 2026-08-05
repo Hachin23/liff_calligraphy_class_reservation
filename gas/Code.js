@@ -821,6 +821,16 @@ function handleCancelReservation(params) {
       const capacityData = getCapacityData();
       syncReservationToWorkers(userId, userInfoFull, capacityData);
 
+      if (admin) {
+        sendAdminLineMessage(userId,
+`教室側で下記のご予約をキャンセルいたしました。
+
+・予約日時：${dateStr} ${startTimeStr}～
+
+ご確認のほど、よろしくお願いいたします。`
+        );
+      }
+
       return { 
         success: true,
         message: "予約をキャンセルしました。",
