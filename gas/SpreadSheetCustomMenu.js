@@ -202,9 +202,28 @@ function adminProxyCancel(userId, reservationId) {
   }
 }
 
-// ========================================
+/**
+ * 指定したユーザーの予約情報を取得
+ */
+function getUserReservations(userId) {
+  const reservationSheet = SPREADSHEET.getSheetByName(SHEET_NAME_RESERVATIONS);
+  const userReservationData = reservationSheet.getDataRange().getValues().
+    filter(reservation => reservation[RES_COL_USER_ID] === userId && reservation[RES_COL_STATUS] === RESERVATION_STATUS.CONFIRMED);
+  // 管理画面表示用の予約情報を返す
+  const result = userReservationData.map(reservation => (
+    {
+      reservationId: reservation[RES_COL_RESERVATION_ID],
+      date: Utilities.formatDate(reservation[RES_COL_DATE], SPREADSHEET.getSpreadsheetTimeZone(), 'yyyy-MM-dd'),
+      startTime: Utilities.formatDate(reservation[RES_COL_START_TIME], SPREADSHEET.getSpreadsheetTimeZone(), 'HH:mm'),
+      className: reservation[RES_COL_SELECTED_CLASS_NAME]
+    }));
+  Logger.log(result);
+  return result;
+}
+
+// =============================================
 // チケット回数と値段をスクリプトプロパティから取得
-// ========================================
+// =============================================
 function getTicketPrices() {
 
   const value = PropertiesService

@@ -38,6 +38,11 @@ const WORKERS_URL = getRequiredProperty("WORKERS_URL");
 // 予約可能日リスト生成と管理関連の定数
 const NUMBER_TO_DAY_NAME = ['日', '月', '火', '水', '木', '金', '土']; // 逆引き用
 
+const RESERVATION_STATUS = {
+  CONFIRMED: "確定",
+  CANCELED: "キャンセル"
+};
+
 // reservationシート 列インデックス定数
 const RES_COL_RESERVATION_ID = 0;
 const RES_COL_DATE = 1;
@@ -822,7 +827,7 @@ function handleCancelReservation(params) {
       syncReservationToWorkers(userId, userInfoFull, capacityData);
 
       if (admin) {
-        sendAdminLineMessage(userId,
+        sendLineMessage(userId,
 `教室側で下記のご予約をキャンセルいたしました。
 
 ・予約日時：${dateStr} ${startTimeStr}～

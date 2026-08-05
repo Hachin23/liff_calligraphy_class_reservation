@@ -29,18 +29,14 @@
 
   <div id="formContent" style="display:none;">
     <label for="studentSelect">生徒を選択:</label>
-    <select id="studentSelect" required>
+    <select id="studentSelect" onchange="onStudentChange()" required>
       <option value="">-- 生徒を選択 --</option>
     </select>
 
-    <label for="bookingDate">日付を選択:</label>
-    <input type="date" id="bookingDate" onchange="onDateChange()" required>
-
-    <label for="lessonSelect">レッスン枠:</label>
+    <label for="lessonSelect">キャンセル日時:</label>
     <select id="lessonSelect" disabled>
-      <option value="">先に日付を選択してください</option>
+      <option value="">先に生徒を選択してください</option>
     </select>
-    <p id="seatInfo" class="info-text"></p>
     
     <button class="btn-submit" onclick="submitAdminCancel()">キャンセルを確定する</button>
   </div>
@@ -73,41 +69,53 @@
     };
 
     /**
-     * 日付変更時にレッスン枠を動的に生成
+     * 生徒変更時に予約一覧を取得
      */
-    function onDateChange() {
-      const selectedDate = document.getElementById('bookingDate').value;
-      const lessons = allReservations[selectedDate] || [];
+    function onStudentChange() {
+      const userId = document.getElementById('studentSelect').value;
       const lSelect = document.getElementById('lessonSelect');
       const seatInfo = document.getElementById('seatInfo');
-      
+
       lSelect.innerHTML = '';
-      
-      if (lessons.length === 0) {
-        lSelect.innerHTML = '<option value="">この日に予約はありません</option>';
+
+      if (!userId) {
+        lSelect.innerHTML = '<option value="">先に生徒を選択してください</option>';
         lSelect.disabled = true;
-        seatInfo.textContent = '';
         return;
       }
 
-      lSelect.disabled = false;
-      const defaultOpt = document.createElement('option');
-      defaultOpt.value = "";
-      defaultOpt.textContent = "-- レッスンを選択 --";
-      lSelect.appendChild(defaultOpt);
+      google.script.run
+        .withSuccessHandler(function(reservations) {
 
-      lessons.forEach(lesson => {
-        const opt = document.createElement('option');
-        opt.value = lesson.reservationId;
-        opt.dataset.className = lesson.className;
-        opt.textContent = `${lesson.startDate} （${lesson.className})`;
-        
-        if (lesson.remainingSeats <= 0) {
-          opt.disabled = true;
-          opt.style.color = '#ccc';
-        }
-        lSelect.appendChild(opt);
-      });
+          lSelect.innerHTML = '';
+
+          if (!reservations || reservations.length === 0) {
+            lSelect.innerHTML = '<option value="">予約はありません</option>';
+            lSelect.disabled = true;
+            seatInfo.textContent = '';
+            return;
+          }
+
+          lSelect.disabled = false;
+
+          const defaultOpt = document.createElement('option');
+          defaultOpt.value = "";
+          defaultOpt.textContent = "-- キャンセルする予約を選択 --";
+          lSelect.appendChild(defaultOpt);
+
+          reservations.forEach(reservation => {
+
+            const opt = document.createElement('option');
+            opt.value = reservation.reservationId;
+            opt.dataset.className = reservation.className;
+
+            opt.textContent =
+              `${reservation.date} ${reservation.startTime}～ (${reservation.className})`;
+
+            lSelect.appendChild(opt);
+          });
+        })
+        .getUserReservations(userId);
     }
 
     /**
@@ -117,8 +125,6 @@
       const studentSelect = document.getElementById('studentSelect');
       const userId = studentSelect.value;
       
-      const date = document.getElementById('bookingDate').value;
-      
       const lSelect = document.getElementById('lessonSelect');
       const reservationId = lSelect.value;
       
@@ -126,12 +132,16 @@
       const selectedOption = lSelect.options[lSelect.selectedIndex];
       const className = selectedOption ? selectedOption.dataset.className : "";
       
-      if (!userId || !date || !reservationId) {
+      if (!userId || !reservationId) {
         alert('全ての項目を正しく選択してください。');
         return;
       }
       
-      if(!confirm(`${date} ${className}\nこの内容で代行キャンセルを実行しますか？`)) return;
+      const text = selectedOption.textContent;
+
+      if (!confirm(`キャンセル日時：${text}\nこの内容で代理キャンセルを実行しますか？`)) {
+        return;
+      }
 
       // ご指定の引数順で GAS を呼び出し
       google.script.run
