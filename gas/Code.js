@@ -402,10 +402,23 @@ function makeReservation(params) {
         rowIndex: index,
         rowData: row
       }));
-      const validUserTicketsRows = userTicketsRowsWithIndex.filter(ticket =>
+      const validUserTicketsRows = userTicketsRowsWithIndex
+        .filter(ticket =>
         ticket.rowData[USER_TICKETS_COL_USER_ID] === userId &&
-        Utilities.formatDate(ticket.rowData[USER_TICKETS_COL_EXPIRE_DATE], SPREADSHEET.getSpreadsheetTimeZone(), 'yyyy-MM-dd') > dateStringNow
-      );
+          Utilities.formatDate(
+            ticket.rowData[USER_TICKETS_COL_EXPIRE_DATE], SPREADSHEET.getSpreadsheetTimeZone(), 'yyyy-MM-dd') > dateStringNow
+      ).sort((a, b) => {
+        // 有効期限が近い順
+        const expireDiff =
+        a.rowData[USER_TICKETS_COL_EXPIRE_DATE] -
+        b.rowData[USER_TICKETS_COL_EXPIRE_DATE];
+
+        if (expireDiff !== 0) {
+          return expireDiff;
+        }
+        // 同じ有効期限なら登録順（シートの行番号）
+        return a.rowIndex - b.rowIndex;
+      });
       let remainingNumberTotal = validUserTicketsRows.length === 0 ? 0 : validUserTicketsRows.map(ticket => ticket.rowData[USER_TICKETS_COL_REMAINING_NUM]).reduce((total, num) => total + num, 0);
       // 消費するチケットを特定（条件：残数が1以上のチケットを消費）
       let targetTicket = validUserTicketsRows.find(ticket => ticket.rowData[USER_TICKETS_COL_REMAINING_NUM] > 0);
@@ -538,7 +551,7 @@ function makeReservation(params) {
       newRow[RES_COL_STATUS] = '確定';
       newRow[RES_COL_MEMO] = '';
       newRow[RES_COL_CALENDAR_EVENT_ID] = ''; // 処理が重いので、バッチ処理でカレンダー連携で対応するので、ここは空で登録。
-      newRow[RES_COL_USAGE_TYPE] = usageType;
+      newRow[RES_COL_USAGE_TYPE] = usageType === "ticket" ? "チケット" : "月謝";
       newRow[RES_COL_TICKETS_ID] = usageType === 'ticket' ? targetTicket.rowData[USER_TICKETS_COL_TICKET_ID] : '';
 
       resSheet.appendRow(newRow);
