@@ -23,6 +23,8 @@ const SHEET_NAME_SCHEDULE_TEMPLATE = 'scheduleTemplate';
 const SHEET_NAME_RESERVATIONS_LIST = 'reservationsList';
 // exceptionsシート
 const SHEET_NAME_EXCEPTIONS = 'exceptions';
+// retryシート
+const SHEET_NAME_RETRY = 'retry';
 
 // ユーザ情報のキャッシュ保持期間（秒）
 const CACHE_SECONDS = 300;
@@ -586,6 +588,16 @@ function makeReservation(params) {
       try {
         syncReservationToWorkers(userId, userInfoFull, capacityData);
       } catch (e) {
+        retryProcessLog({
+          retryId: Utilities.getUuid(),
+          processType: PROCESS_TYPE.SYNC_WORKERS,
+          args: JSON.stringify({ userId: userId}),
+          retryCount: 0,
+          status: RETRY_STATUS.WAITING,
+          errorContents: e.message,
+          registerDate: new Date(),
+          finalExecuteDate: "",
+        })
         Logger.log(`Workers同期エラー: ${e.stack || e}`);
       }
       // 最終的なメッセージを組み立てて返す

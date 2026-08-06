@@ -185,10 +185,13 @@ function syncReservationToWorkers(userId, userData, capacityData) {
     muteHttpExceptions: true
   };
 
-  try {
-    const response = UrlFetchApp.fetch(WORKERS_URL, options);
-    console.log("Workers Sync Response: " + response.getContentText());
-  } catch (e) {
-    console.error("Workersへの同期に失敗しました: " + e.toString());
+  const response = UrlFetchApp.fetch(WORKERS_URL, options);
+  const statusCode = response.getResponseCode();
+
+  if (statusCode < 200 || statusCode >= 300) {
+    throw new Error(
+      `Workers同期失敗 status:${statusCode} body:${response.getContentText()}`
+    );
   }
+  Logger.log("Workers Sync Response: " + response.getContentText());
 }
