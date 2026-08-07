@@ -625,7 +625,10 @@ select:focus {
 /* 日付の数字を囲むspan（JSで追加） */
 .calendar-cell .date-number {
     display: block; /* 日付を独立させ、右寄せを維持 */
-    position: relative;
+    /* position: relative; */
+    position: absolute;
+    top: 4px;     /* 上下位置 */
+    right: 6px;
     z-index: 1;
 }
 
