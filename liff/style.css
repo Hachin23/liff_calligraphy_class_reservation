@@ -450,7 +450,7 @@ select:focus {
   
   /* --- 円を親要素（.date-number）のど真ん中に配置する魔法の呪文 --- */
   top: 56%;
-  left: 72%;
+  left: 20%;
   transform: translate(-50%, -50%); /* 自身のサイズの半分だけ戻す */
   
   /* --- 円のサイズと形の設定 --- */
@@ -628,7 +628,7 @@ select:focus {
     /* position: relative; */
     position: absolute;
     top: 4px;     /* 上下位置 */
-    right: 6px;
+    right: 16px;
     z-index: 1;
 }
 
