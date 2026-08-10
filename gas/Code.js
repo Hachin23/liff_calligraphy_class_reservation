@@ -946,7 +946,22 @@ function handleCancelReservation(params) {
       };
 
       const capacityData = getCapacityData();
-      syncReservationToWorkers(userId, userInfoFull, capacityData);
+
+      try {
+        syncReservationToWorkers(userId, userInfoFull, capacityData);
+      } catch (e) {
+        retryProcessLog({
+          retryId: Utilities.getUuid(),
+          processType: PROCESS_TYPE.SYNC_WORKERS,
+          args: JSON.stringify({ userId: userId}),
+          retryCount: 0,
+          status: RETRY_STATUS.WAITING,
+          errorContents: e.message,
+          registerDate: new Date(),
+          finalExecuteDate: "",
+        })
+        Logger.log(`Workers同期エラー: ${e.stack || e}`);
+      }
 
       if (admin) {
         sendLineMessage(userId,
@@ -1176,6 +1191,9 @@ function cancelTicketConsumption(
     const remainingNum =
       currentTargetTicket.rowData[USER_TICKETS_COL_REMAINING_NUM];
 
+    currentTargetTicket.rowData[USER_TICKETS_COL_REMAINING_NUM] =
+      remainingNum + 1;
+    
     userTicketsSheet
       .getRange(
         currentTargetTicket.rowIndex + 1,
