@@ -62,7 +62,7 @@ const RES_COL_STATUS = 12;
 const RES_COL_MEMO = 13;
 const RES_COL_CALENDAR_EVENT_ID = 14;
 const RES_COL_USAGE_TYPE = 15;
-const RES_COL_TICKETS_ID = 16;
+const RES_COL_TICKET_ID = 16;
 
 // reservationListシート　列インデックス定数
 const RES_LIST_COL_DATE = 0;
@@ -556,7 +556,7 @@ function makeReservation(params) {
       newRow[RES_COL_MEMO] = '';
       newRow[RES_COL_CALENDAR_EVENT_ID] = ''; // 処理が重いので、バッチ処理でカレンダー連携で対応するので、ここは空で登録。
       newRow[RES_COL_USAGE_TYPE] = usageType === "ticket" ? "チケット" : "月謝";
-      newRow[RES_COL_TICKETS_ID] = usageType === 'ticket' ? targetTicket.rowData[USER_TICKETS_COL_TICKET_ID] : '';
+      newRow[RES_COL_TICKET_ID] = usageType === 'ticket' ? targetTicket.rowData[USER_TICKETS_COL_TICKET_ID] : '';
 
       resSheet.appendRow(newRow);
       // 予約一覧のキャッシュを削除 (既存)
@@ -818,7 +818,7 @@ function handleCancelReservation(params) {
       
       let hasMonthly = userMontlyRow !== undefined;
       let hasTickets = validUserTicketsRows.length !== 0;
-      const reservationTicketId = values[RES_COL_TICKETS_ID];
+      const reservationTicketId = values[RES_COL_TICKET_ID];
       
       if (hasTickets) {
         let targetTicketIndex = null;
@@ -1295,7 +1295,7 @@ function slideMonthlyAndTicket(
     resSheet
       .getRange(
         targetReservation.rowIndex + 1,
-        RES_COL_TICKETS_ID + 1
+        RES_COL_TICKET_ID + 1
       )
       .setValue("");
 
