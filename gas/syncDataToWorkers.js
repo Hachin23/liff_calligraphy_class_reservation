@@ -161,8 +161,7 @@ function getUserInfoFromSheet(userId) {
       remainingNumberTotal: remainingNumberTotal,
       // チケット購入履歴があるか
       purchaseHistory: userTicketsRows.length !== 0 ? true : false
-    },
-    afterInitialRegistration: false
+    }
   };
 }
 

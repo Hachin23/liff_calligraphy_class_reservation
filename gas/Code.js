@@ -136,6 +136,7 @@ function doPost(e) {
         result = handleCancelReservation(params);
         break;
       case "getCalendarData":
+        verifyToken(params.accessToken);
         result = getCalendarData(params);
         break;
       case "makeReservation":
@@ -308,7 +309,8 @@ function makeReservation(params) {
       const listData = listSheet.getDataRange().getValues();
       const userRow = usersSheet.getDataRange().getValues().slice(1).find(row => row[0] === userId);
       const userMontlyRow = userMonthlySubscriptionsSheet.getDataRange().getValues().slice(1).find(row => row[0] === userId);
-      const userTicketsRows = userTicketsSheet.getDataRange().getValues().slice(1);
+      const userTicketsRows = userTicketsSheet.getDataRange().getValues();
+      const userTicketsData = userTicketsRows.slice(1).filter(ticket => ticket[USER_TICKETS_COL_USER_ID] === userId);
 
       const ssTimezone = SPREADSHEET.getSpreadsheetTimeZone();
 
@@ -399,7 +401,7 @@ function makeReservation(params) {
       const reservationMonth = Utilities.formatDate(targetDate, ssTimezone, 'MM');
       
       const now = new Date();
-      const dateStringNow = Utilities.formatDate(now, SPREADSHEET.getSpreadsheetTimeZone(), 'yyyy-MM-dd');
+      const dateString = date;
       const userTicketsRowsWithIndex = userTicketsRows.map((row, index) => ({
         rowIndex: index,
         rowData: row
@@ -408,7 +410,7 @@ function makeReservation(params) {
         .filter(ticket =>
         ticket.rowData[USER_TICKETS_COL_USER_ID] === userId &&
           Utilities.formatDate(
-            ticket.rowData[USER_TICKETS_COL_EXPIRE_DATE], SPREADSHEET.getSpreadsheetTimeZone(), 'yyyy-MM-dd') > dateStringNow
+            ticket.rowData[USER_TICKETS_COL_EXPIRE_DATE], SPREADSHEET.getSpreadsheetTimeZone(), 'yyyy-MM-dd') >= dateString
       ).sort((a, b) => {
         // 有効期限が近い順
         const expireDiff =
@@ -576,9 +578,8 @@ function makeReservation(params) {
             })),
             remainingNumberTotal: remainingNumberTotal,
             // チケット購入履歴があるか
-            purchaseHistory: userTicketsRows.length !== 0 ? true : false
-          },
-          afterInitialRegistration: false
+            purchaseHistory: userTicketsData.length !== 0
+          }
         },
         myReservedDates: reservations.myReservedDates,
         myAttendedDates: reservations.myAttendedDates
@@ -687,6 +688,12 @@ function handleCancelReservation(params) {
           return { success: false, message: "指定された予約が見つかりません。" };
       }
 
+      const usersSheet = SPREADSHEET.getSheetByName(SHEET_NAME_USERS);
+      const userRow = usersSheet.getDataRange().getValues().slice(1).find(row => row[0] === userId);
+      if (!userRow) {
+          return { success: false, message: 'ユーザー情報が見つかりません。' };
+      }
+
       // 予約シートのインデックス (0-based)
       const COL_DATE_IDX = RES_COL_DATE;
       const COL_START_TIME_IDX = RES_COL_START_TIME;
@@ -724,7 +731,112 @@ function handleCancelReservation(params) {
           return { success: false, message: "キャンセル期限が過ぎています。" };
       }
       
-      // --- 4. キャンセル実行 (reservationsシートの更新: K, L, M列をバッチ更新) ---
+      // チケット管理シートからユーザーのチケット情報を取得      
+      const userTicketsSheet = SPREADSHEET.getSheetByName(SHEET_NAME_USER_TICKETS);
+      const userTicketsRows = userTicketsSheet.getDataRange().getValues();
+      const userTicketsData = userTicketsRows.slice(1).filter(ticket => ticket[USER_TICKETS_COL_USER_ID] === userId);
+      
+      const userTicketsRowsWithIndex = userTicketsRows.map((row, index) => ({
+        rowIndex: index,
+        rowData: row
+      }));
+      
+      const reservationsRowsWithIndex = allReservationData.map((row, index) => ({
+        rowIndex: index,
+        rowData: row
+      }));
+      
+      const date = values[COL_DATE_IDX];
+      const dateStr = Utilities.formatDate(date, ssTimezone, 'yyyy-MM-dd');
+      // キャンセルでは残数「0」も検索対象
+      const validUserTicketsRows = userTicketsRowsWithIndex
+        .filter(ticket => ticket.rowData[USER_TICKETS_COL_USER_ID] === userId
+          // 有効期限がキャンセル日以降のチケット
+          && Utilities.formatDate(ticket.rowData[USER_TICKETS_COL_EXPIRE_DATE], SPREADSHEET.getSpreadsheetTimeZone(), 'yyyy-MM-dd') >= dateStr
+          // 一度も消費されていないチケットは対象外
+          && ticket.rowData[USER_TICKETS_COL_PURCHASE_NUM] !== ticket.rowData[USER_TICKETS_COL_REMAINING_NUM]
+      ).sort((ticket1, ticket2) => {
+        // 有効期限が近い順
+        const expireDiff =
+        ticket1.rowData[USER_TICKETS_COL_EXPIRE_DATE] -
+        ticket2.rowData[USER_TICKETS_COL_EXPIRE_DATE];
+
+        if (expireDiff !== 0) {
+          return expireDiff;
+        }
+        // 同じ有効期限なら登録順（シートの行番号）
+        return ticket1.rowIndex - ticket2.rowIndex;
+      })
+      .map(ticket => {
+        const ticketId = ticket.rowData[USER_TICKETS_COL_TICKET_ID];
+
+        const reservations = reservationsRowsWithIndex.filter(reservation =>
+          reservation.rowData[RES_COL_TICKET_ID] === ticketId &&
+          reservation.rowData[RES_COL_STATUS] === "確定"
+        )
+        .sort((reservation1, reservation2) => {
+        // 予約日が新しい順
+        const date1 = Utilities.formatDate(reservation1.rowData[RES_COL_DATE], ssTimezone, 'yyyy-MM-dd');
+        const date2 = Utilities.formatDate(reservation2.rowData[RES_COL_DATE], ssTimezone, 'yyyy-MM-dd');
+        if (date1 !== date2) {
+          return date2.localeCompare(date1);
+        }
+
+        // 同じ日なら開始時刻が遅い順
+        const time1 = reservation1.rowData[RES_COL_START_TIME] instanceof Date
+          ? Utilities.formatDate(
+              reservation1.rowData[RES_COL_START_TIME],
+              ssTimezone,
+              'HH:mm'
+            )
+          : String(reservation1.rowData[RES_COL_START_TIME]).trim();
+
+        const time2 = reservation2.rowData[RES_COL_START_TIME] instanceof Date
+          ? Utilities.formatDate(
+            reservation2.rowData[RES_COL_START_TIME],
+            ssTimezone,
+              'HH:mm'
+            )
+          : String(reservation2.rowData[RES_COL_START_TIME]).trim();
+
+        return time2.localeCompare(time1);
+        });
+
+        if (reservations.length === 0) {
+          throw new Error(`チケットに紐づく予約が見つかりません。ticketId: ${ticketId}`);
+        }
+
+        return {
+          ticket: ticket,
+          reservations: reservations
+        };
+      });
+      
+      // 月稽古管理シートからユーザーの稽古回数を取得
+      const userMonthlySubscriptionsSheet = SPREADSHEET.getSheetByName(SHEET_NAME_USER_MONTHLY_SUBSCRIPTIONS);
+      const userMontlyRow = userMonthlySubscriptionsSheet.getDataRange().getValues().slice(1).find(row => row[0] === userId);
+      
+      let hasMonthly = userMontlyRow !== undefined;
+      let hasTickets = validUserTicketsRows.length !== 0;
+      const reservationTicketId = values[RES_COL_TICKETS_ID];
+      
+      if (hasTickets) {
+        let targetTicketIndex = null;
+        if (reservationTicketId) {
+          targetTicketIndex = validUserTicketsRows.findIndex(cancelInfo => cancelInfo.ticket.rowData[USER_TICKETS_COL_TICKET_ID] === reservationTicketId);
+          if (targetTicketIndex === -1) {
+            throw new Error(`キャンセル対象のチケットが見つかりません。ticketId: ${reservationTicketId}`);
+          }
+        }
+        if (hasMonthly) {
+          //チケット + 月謝の処理
+          cancelMonthlyAndTicketConsumption(userTicketsSheet, resSheet, userMontlyRow, validUserTicketsRows, targetTicketIndex, {rowIndex: row, rowData: values})
+        } else {
+          cancelTicketConsumption(userTicketsSheet, resSheet, validUserTicketsRows, targetTicketIndex);
+        }
+      }
+
+      // キャンセル実行 (reservationsシートの更新: K, L, M列をバッチ更新) ---
       const cancelDateTimeStr = Utilities.formatDate(now, ssTimezone, 'yyyy/MM/dd HH:mm:ss');
 
       resSheet.getRange(row, COL_OPERATION_IDX + 1, 1, 3).setValues([[
@@ -733,14 +845,11 @@ function handleCancelReservation(params) {
           cancelDateTimeStr       // M: メモ (キャンセル日時として記録)
       ]]);
 
-      // --- 5. 残席リスト (reservationsList) の残席数回復 ---
-      
-      const date = values[COL_DATE_IDX];
+      // 残席リスト (reservationsList) の残席数回復
       const startTime = values[COL_START_TIME_IDX];
       const lessonId = values[COL_LESSON_ID_IDX];
       
       // ターゲットキーの生成
-      const dateStr = Utilities.formatDate(date, ssTimezone, 'yyyy-MM-dd');
       const startTimeStr = (startTime instanceof Date) 
           ? Utilities.formatDate(startTime, ssTimezone, 'HH:mm') 
           : String(startTime).trim();
@@ -791,21 +900,6 @@ function handleCancelReservation(params) {
       const monthKey = Utilities.formatDate(date, ssTimezone, 'yyyy-MM');
       deleteReservationsCache(userId, monthKey);
       const cancelDateTime = `${dateStr.replace(/-/g, '/')} ${startTimeStr}～`;
-      // Cloudflareへの同期処理実行
-      // syncCapacityToWorkers();
-      // syncUserFullData(userId);
-
-      const usersSheet = SPREADSHEET.getSheetByName(SHEET_NAME_USERS);
-      const userRow = usersSheet.getDataRange().getValues().slice(1).find(row => row[0] === userId);
-      if (!userRow) {
-          return { success: false, message: 'ユーザー情報が見つかりません。' };
-      }
-
-      const userMonthlySubscriptionsSheet = SPREADSHEET.getSheetByName(SHEET_NAME_USER_MONTHLY_SUBSCRIPTIONS);
-      const userMontlyRow = userMonthlySubscriptionsSheet.getDataRange().getValues().slice(1).find(row => row[0] === userId);
-      
-      const userTicketsSheet = SPREADSHEET.getSheetByName(SHEET_NAME_USER_TICKETS);
-      const userTicketsRows = userTicketsSheet.getDataRange().getValues().slice(1).filter(row => row[1] === userId);
 
       const userClassName = userRow[2];           // C列: ClassName
       const reserverName = userRow ? userRow[1] : "不明"; // B列: DisplayNameを想定
@@ -819,10 +913,16 @@ function handleCancelReservation(params) {
       }
       
       const reservations = getAllReservationsForUser(userId);
-      
-      const dateStringNow = Utilities.formatDate(now, SPREADSHEET.getSpreadsheetTimeZone(), 'yyyy-MM-dd');
-      let validUserTicketsRows = userTicketsRows.filter(row => Utilities.formatDate(row[7], SPREADSHEET.getSpreadsheetTimeZone(), 'yyyy-MM-dd') > dateStringNow)
-      let remainingNumberTotal = validUserTicketsRows.length === 0 ? 0 : validUserTicketsRows.map(row => row[5]).reduce((total, num) => total + num, 0);
+      const availableUserTickets = userTicketsRows.slice(1)
+        .filter(row =>
+          row[USER_TICKETS_COL_USER_ID] === userId &&
+          Utilities.formatDate(
+            row[USER_TICKETS_COL_EXPIRE_DATE],
+            ssTimezone,
+            'yyyy-MM-dd'
+          ) >= dateStr
+        );
+      let remainingNumberTotal = availableUserTickets.length === 0 ? 0 : availableUserTickets.map(row => row[USER_TICKETS_COL_REMAINING_NUM]).reduce((total, num) => total + num, 0);
       const userInfoFull = {
         data: {
           userId: userId,
@@ -832,17 +932,14 @@ function handleCancelReservation(params) {
           upperLimitNumberThisMonth: limitNumberIntThisMonth,
           upperLimitNumberNextMonth: limitNumberIntNextMonth,
           ticketInfo: {
-            dispInfo: validUserTicketsRows.map(row => {
-              const obj = {};
-              obj.remainingNumber = row[5];
-              obj.expirationDate = Utilities.formatDate(row[7], SPREADSHEET.getSpreadsheetTimeZone(), 'yyyy-MM-dd');
-              return obj;
-            }),
+            dispInfo: validUserTicketsRows.map(row => ({
+              remainingNumber: row.ticket.rowData[USER_TICKETS_COL_REMAINING_NUM],
+              expirationDate: Utilities.formatDate(row.ticket.rowData[USER_TICKETS_COL_EXPIRE_DATE], SPREADSHEET.getSpreadsheetTimeZone(), 'yyyy-MM-dd')
+            })),
             remainingNumberTotal: remainingNumberTotal,
             // チケット購入履歴があるか
-            purchaseHistory: userTicketsRows.length !== 0 ? true : false
-          },
-          afterInitialRegistration: false
+            purchaseHistory: userTicketsData.length !== 0
+          }
         },
         myReservedDates: reservations.myReservedDates,
         myAttendedDates: reservations.myAttendedDates
@@ -895,4 +992,399 @@ function verifyToken(accessToken) {
   }
   return true;
 }
+
+/**
+ * チケット消費分のキャンセル処理
+ *
+ * キャンセルによって空いたチケットの消費枠を、
+ * 後続チケットの予約から有効期限内のものを探して連鎖的にスライドする。
+ *
+ * 例：
+ *
+ * A：7/30期限
+ *   └ 7/2予約 ← キャンセル
+ *
+ * B：8/10期限
+ *   └ 7/20予約
+ *
+ * C：8/30期限
+ *   └ 7/25予約
+ *
+ * ↓
+ *
+ * A ← Bの7/20予約
+ * B ← Cの7/25予約
+ * C → 残数+1
+ *
+ * 有効期限を超える予約はスライドせず、
+ * その予約は元のチケットに残す。
+ */
+function cancelTicketConsumption(
+  userTicketsSheet,
+  reservationsSheet,
+  validUserTicketsRows,
+  targetTicketIndex,
+  skipFinalIncrementTicketId = null
+) {
+  const ssTimezone = SPREADSHEET.getSpreadsheetTimeZone();
+
+  // ============================================================
+  // 現在の「移動先」となるチケット
+  //
+  // 最初はキャンセル対象チケット。
+  // B → A とスライドした後は、Bが次の移動先になる。
+  // ============================================================
+  let currentTargetIndex = targetTicketIndex;
+  let currentTargetTicketData = validUserTicketsRows[currentTargetIndex];
+  let currentTargetTicket = currentTargetTicketData.ticket;
+
+  // ============================================================
+  // 現在の移動先チケットの有効期限
+  // ============================================================
+  let currentTargetExpireDateStr = Utilities.formatDate(
+    currentTargetTicket.rowData[USER_TICKETS_COL_EXPIRE_DATE],
+    ssTimezone,
+    'yyyy-MM-dd'
+  );
+
+  // ============================================================
+  // 後続チケットを順番に確認
+  // ============================================================
+  for (let sourceTicketIndex = currentTargetIndex + 1; sourceTicketIndex < validUserTicketsRows.length; sourceTicketIndex++) {
+    
+    const sourceTicketData = validUserTicketsRows[sourceTicketIndex];
+    const sourceTicket = sourceTicketData.ticket;
+    const reservations = sourceTicketData.reservations;
+
+    // 予約がないチケットはスキップ
+    if (!reservations || reservations.length === 0) {
+      continue;
+    }
+
+    // ==========================================================
+    // 後続チケットの予約から、
+    // 現在の移動先チケットの有効期限内に収まる予約を探す
+    //
+    // 例：
+    // B：
+    //   8/2  → Aの期限外
+    //   7/20 → Aの期限内
+    //
+    // 8/2で終了せず、7/20まで確認する。
+    // ==========================================================
+    let slideReservation = null;
+
+    for (let reservationIndex = 0; reservationIndex < reservations.length; reservationIndex++) {
+      const reservation = reservations[reservationIndex];
+      const reservationDateStr = Utilities.formatDate(
+        reservation.rowData[RES_COL_DATE],
+        ssTimezone,
+        'yyyy-MM-dd'
+      );
+
+      if (reservationDateStr <= currentTargetExpireDateStr) {
+        slideReservation = reservation;
+        break;
+      }
+    }
+
+    // ==========================================================
+    // スライド可能な予約がなければ、
+    // この後続チケットから先を確認する
+    //
+    // 重要：
+    // ここで終了しない。
+    // さらに後ろのチケットにスライド可能な予約が
+    // 存在する可能性があるため。
+    // ==========================================================
+    if (!slideReservation) {
+      continue;
+    }
+
+    const reservationDateStr = Utilities.formatDate(
+      slideReservation.rowData[RES_COL_DATE],
+      ssTimezone,
+      'yyyy-MM-dd'
+    );
+
+    // ==========================================================
+    // 予約を現在の移動先チケットへスライド
+    // ==========================================================
+    reservationsSheet
+      .getRange(
+        slideReservation.rowIndex + 1,
+        RES_COL_TICKET_ID + 1
+      )
+      .setValue(
+        currentTargetTicket.rowData[
+          USER_TICKETS_COL_TICKET_ID
+        ]
+      );
+
+    Logger.log(
+      `チケットをスライドしました。` +
+      ` targetTicketId=${currentTargetTicket.rowData[USER_TICKETS_COL_TICKET_ID]},` +
+      ` sourceTicketId=${sourceTicket.rowData[USER_TICKETS_COL_TICKET_ID]},` +
+      ` reservationDate=${reservationDateStr},` +
+      ` targetTicketExpireDate=${currentTargetExpireDateStr}`
+    );
+
+    // ==========================================================
+    // 今回予約を移動した「元チケット」が、
+    // 次のスライド先になる
+    //
+    // 例：
+    // A ← B
+    // ↓
+    // 次は B ← C
+    // ==========================================================
+    currentTargetIndex = sourceTicketIndex;
+    currentTargetTicketData = sourceTicketData;
+    currentTargetTicket = sourceTicket;
+
+    currentTargetExpireDateStr = Utilities.formatDate(
+      currentTargetTicket.rowData[
+        USER_TICKETS_COL_EXPIRE_DATE
+      ],
+      ssTimezone,
+      'yyyy-MM-dd'
+    );
+
+    // ==========================================================
+    // 次のチケットから探し直す
+    // ==========================================================
+    // forループの次の処理へ
+  }
+
+  // ============================================================
+  // 最後までスライドした結果、
+  // 最後の移動元チケットに1枠空きができる
+  //
+  // 例：
+  // A ← B ← C
+  //
+  // 最終的にCの残数を+1する。
+  //
+  // 途中で一切スライドできなかった場合は、
+  // Aの残数を+1する。
+  // ============================================================
+
+  const finalTicketId = currentTargetTicket.rowData[USER_TICKETS_COL_TICKET_ID];
+
+  if (finalTicketId !== skipFinalIncrementTicketId) {
+
+    const remainingNum =
+      currentTargetTicket.rowData[USER_TICKETS_COL_REMAINING_NUM];
+
+    userTicketsSheet
+      .getRange(
+        currentTargetTicket.rowIndex + 1,
+        USER_TICKETS_COL_REMAINING_NUM + 1
+      )
+      .setValue(remainingNum + 1);
+
+    Logger.log(
+      `チケットスライド処理が完了しました。` +
+      ` 最終的に残数を1戻したticketId=${finalTicketId}`
+    );
+
+  } else {
+
+    Logger.log(
+      `チケット残数+1をスキップしました。` +
+      ` ticketId=${finalTicketId}`
+    );
+
+  }
+
+}
+
+function slideMonthlyAndTicket(
+  userTicketsSheet,
+  resSheet, 
+  userMontlyRow,
+  validUserTicketsRows,
+  targetReservationData
+) {
+  
+  const ssTimezone = SPREADSHEET.getSpreadsheetTimeZone();
+
+  // ============================================================
+  // キャンセル対象の予約月
+  // ============================================================
+  const selectedCancelMonth = Utilities.formatDate(targetReservationData.rowData[RES_COL_DATE], ssTimezone, "yyyy-MM");
+
+  // ============================================================
+  // 月謝上限
+  // ============================================================
+  const now = new Date();
+
+  const currentMonth = Utilities.formatDate(now, ssTimezone, "yyyy-MM");
+  const isThisMonth = currentMonth === selectedCancelMonth;
+
+  const upperLimit = isThisMonth ? userMontlyRow[3] : userMontlyRow[4]
+  const userId = userMontlyRow[0];
+  
+  // ============================================================
+  // キャンセル後の対象月の予約を取得
+  // ============================================================
+  const resSheetData = resSheet.getDataRange().getValues().slice(1);
+  
+  const targetMonthUserReservation = resSheetData.filter(
+    reservation => Utilities.formatDate(reservation[RES_COL_DATE], ssTimezone, "yyyy-MM") === selectedCancelMonth
+      && reservation[RES_COL_USER_ID] === userId
+      && reservation[RES_COL_STATUS] !== "キャンセル済み"
+  );
+
+  // ============================================================
+  // 月謝枠を超えていない場合はチケット消費なし
+  // ============================================================
+  if (targetMonthUserReservation.length <= upperLimit) {
+    return;
+  }
+  // ============================================================
+  // 対象月のチケット予約を取得
+  //
+  // validUserTicketsRows は有効期限順なので、
+  // 「有効期限が遠いチケット」を後ろから探す。
+  // ============================================================
+  for (let ticketIndex = validUserTicketsRows.length - 1; ticketIndex >= 0; ticketIndex--) {
+    const ticketData = validUserTicketsRows[ticketIndex];
+    const ticket = ticketData.ticket;
+    const reservations = ticketData.reservations || [];
+
+    // ------------------------------------------------------------
+    // 対象月の確定予約だけを取得
+    // ------------------------------------------------------------
+    const targetMonthReservations = reservations.filter(
+      reservation =>
+        reservation.rowData[RES_COL_STATUS] === "確定" &&
+        Utilities.formatDate(
+          reservation.rowData[RES_COL_DATE],
+          ssTimezone,
+          "yyyy-MM"
+        ) === selectedCancelMonth
+    );
+
+    if (targetMonthReservations.length === 0) {
+      continue;
+    }
+
+    // ------------------------------------------------------------
+    // 複数予約がある場合は、予約日が遅いものを月謝へ戻す
+    // ------------------------------------------------------------
+    targetMonthReservations.sort(
+      (a, b) =>
+        new Date(b.rowData[RES_COL_DATE]).getTime() -
+        new Date(a.rowData[RES_COL_DATE]).getTime()
+    );
+
+    const targetReservation = targetMonthReservations[0];
+
+    // ============================================================
+    // チケット予約 → 月謝予約へ変更
+    // ============================================================
+    resSheet
+      .getRange(
+        targetReservation.rowIndex + 1,
+        RES_COL_USAGE_TYPE + 1
+      )
+      .setValue("月謝");
+
+    // 月謝になったのでチケットIDを削除
+    resSheet
+      .getRange(
+        targetReservation.rowIndex + 1,
+        RES_COL_TICKETS_ID + 1
+      )
+      .setValue("");
+
+    // ============================================================
+    // 元のチケットに1枠戻す
+    // ============================================================
+    const remainingNum =
+      Number(
+        ticket.rowData[USER_TICKETS_COL_REMAINING_NUM]
+      );
+
+    ticket.rowData[USER_TICKETS_COL_REMAINING_NUM] =
+      remainingNum + 1;
+
+    userTicketsSheet
+      .getRange(
+        ticket.rowIndex + 1,
+        USER_TICKETS_COL_REMAINING_NUM + 1
+      )
+      .setValue(remainingNum + 1);
+
+    // ============================================================
+    // メモリ上の予約からも移動した予約を削除
+    //
+    // この後 cancelTicketConsumption() を呼ぶため、
+    // 「まだこのチケットに紐づいている予約」だけを残す。
+    // ============================================================
+    const movedReservationIndex =
+      ticketData.reservations.findIndex(
+        reservation =>
+          reservation.rowIndex === targetReservation.rowIndex
+      );
+
+    if (movedReservationIndex !== -1) {
+      ticketData.reservations.splice(
+        movedReservationIndex,
+        1
+      );
+    }
+
+    Logger.log(
+      `月謝枠へチケット予約をスライドしました。` +
+      ` ticketId=${ticket.rowData[USER_TICKETS_COL_TICKET_ID]},` +
+      ` reservationRow=${targetReservation.rowIndex + 1}`
+    );
+
+    // ============================================================
+    // まだこのチケットに予約が残っている場合
+    //
+    // → 空いた1枠について後続チケットからスライド
+    // ============================================================
+    if (ticketData.reservations.length > 0) {
+      cancelTicketConsumption(
+        userTicketsSheet,
+        resSheet,
+        validUserTicketsRows,
+        ticketIndex,
+        ticket.rowData[USER_TICKETS_COL_TICKET_ID]
+      );
+    }
+    return;
+  }
+
+  // ============================================================
+  // 月謝枠を超えているのに対象チケット予約が見つからない
+  // ============================================================
+  throw new Error(
+    `月謝へ戻すチケット予約が見つかりません。` +
+    ` userId=${userId}, month=${selectedCancelMonth}`
+  );
+}
+
+function cancelMonthlyAndTicketConsumption(
+  userTicketsSheet,
+  resSheet,
+  userMontlyRow,
+  validUserTicketsRows,
+  targetTicketIndex,
+  // {rowIndex: rowIndex, rowData: reservationData}
+  targetReservationData
+) {
+  const targetCancelUsageType = targetReservationData.rowData[RES_COL_USAGE_TYPE];
+
+  if (targetCancelUsageType === "月謝") {
+    slideMonthlyAndTicket(userTicketsSheet, resSheet, userMontlyRow, validUserTicketsRows, targetReservationData);
+  } else {
+    cancelTicketConsumption(userTicketsSheet, resSheet, validUserTicketsRows, targetTicketIndex);
+  }
+}
+
+
 
