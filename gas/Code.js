@@ -932,9 +932,9 @@ function handleCancelReservation(params) {
           upperLimitNumberThisMonth: limitNumberIntThisMonth,
           upperLimitNumberNextMonth: limitNumberIntNextMonth,
           ticketInfo: {
-            dispInfo: validUserTicketsRows.map(row => ({
-              remainingNumber: row.ticket.rowData[USER_TICKETS_COL_REMAINING_NUM],
-              expirationDate: Utilities.formatDate(row.ticket.rowData[USER_TICKETS_COL_EXPIRE_DATE], SPREADSHEET.getSpreadsheetTimeZone(), 'yyyy-MM-dd')
+            dispInfo: availableUserTickets.map(row => ({
+              remainingNumber: row[USER_TICKETS_COL_REMAINING_NUM],
+              expirationDate: Utilities.formatDate(row[USER_TICKETS_COL_EXPIRE_DATE], ssTimezone, 'yyyy-MM-dd')
             })),
             remainingNumberTotal: remainingNumberTotal,
             // チケット購入履歴があるか
