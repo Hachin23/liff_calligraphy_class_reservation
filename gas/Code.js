@@ -916,12 +916,20 @@ function handleCancelReservation(params) {
       const availableUserTickets = userTicketsRows.slice(1)
         .filter(row =>
           row[USER_TICKETS_COL_USER_ID] === userId &&
-          Utilities.formatDate(
-            row[USER_TICKETS_COL_EXPIRE_DATE],
-            ssTimezone,
-            'yyyy-MM-dd'
-          ) >= dateStr
-        );
+          Utilities.formatDate(row[USER_TICKETS_COL_EXPIRE_DATE], ssTimezone, 'yyyy-MM-dd') >= dateStr
+       )
+        .sort((ticket1, ticket2) => {
+          // 有効期限が近い順
+          const expireDiff =
+          ticket1.rowData[USER_TICKETS_COL_EXPIRE_DATE] -
+          ticket2.rowData[USER_TICKETS_COL_EXPIRE_DATE];
+
+          if (expireDiff !== 0) {
+            return expireDiff;
+          }
+          // 同じ有効期限なら登録順（シートの行番号）
+          return ticket1.rowIndex - ticket2.rowIndex;
+      });
       let remainingNumberTotal = availableUserTickets.length === 0 ? 0 : availableUserTickets.map(row => row[USER_TICKETS_COL_REMAINING_NUM]).reduce((total, num) => total + num, 0);
       const userInfoFull = {
         data: {
