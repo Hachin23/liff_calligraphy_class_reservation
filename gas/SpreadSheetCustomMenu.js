@@ -1276,7 +1276,6 @@ function frequentCalendarSyncAndMaintenance() {
     // ===========================================
 
     // 有効期限が有効、残数が「0」、ステータスが「有効」のチケットを取得
-    const ssTimezone = SPREADSHEET.getSpreadsheetTimeZone();
     const dateStr = Utilities.formatDate(new Date(), ssTimezone, "yyyy-MM-dd");
     const userTicketsRowsWithIndex = userTicketSheet.getDataRange().getValues().slice(1).map((row, index) => ({
       rowIndex: index + 1,
