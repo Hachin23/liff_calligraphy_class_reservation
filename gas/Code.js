@@ -921,14 +921,14 @@ function handleCancelReservation(params) {
         .sort((ticket1, ticket2) => {
           // 有効期限が近い順
           const expireDiff =
-          ticket1.rowData[USER_TICKETS_COL_EXPIRE_DATE] -
-          ticket2.rowData[USER_TICKETS_COL_EXPIRE_DATE];
+          ticket1[USER_TICKETS_COL_EXPIRE_DATE] -
+          ticket2[USER_TICKETS_COL_EXPIRE_DATE];
 
           if (expireDiff !== 0) {
             return expireDiff;
           }
           // 同じ有効期限なら登録順（シートの行番号）
-          return ticket1.rowIndex - ticket2.rowIndex;
+          return ticket1[USER_TICKETS_COL_REGISTER_DATE] - ticket2[USER_TICKETS_COL_REGISTER_DATE];
       });
       let remainingNumberTotal = availableUserTickets.length === 0 ? 0 : availableUserTickets.map(row => row[USER_TICKETS_COL_REMAINING_NUM]).reduce((total, num) => total + num, 0);
       const userInfoFull = {
@@ -1000,18 +1000,23 @@ function handleCancelReservation(params) {
 
 function verifyToken(accessToken) {
   // 1. トークンの検証とユーザーIDの取得
-  const verifyResponse = UrlFetchApp.fetch(LINE_VERIFY_URL + "?access_token=" + accessToken);
+  const verifyResponse = UrlFetchApp.fetch(
+    LINE_VERIFY_URL + "?access_token=" + encodeURIComponent(accessToken),
+    {
+      muteHttpExceptions: true
+    }
+  );
   const verifyData = JSON.parse(verifyResponse.getContentText());
   
   // 検証に失敗した場合 (例: トークンが無効・期限切れ)
   if (verifyData.error || !verifyData.client_id) {
-      throw new Error("Token verification failed or expired.");
+      throw new Error("TOKEN_EXPIRED");
   }
 
   // client_idの厳格な検証
   if (verifyData.client_id !== LIFF_CLIENT_ID) {
       // トークンが別のアプリのものである場合、不正アクセスと見なす
-      throw new Error("Token client_id mismatch. Invalid application source.");
+      throw new Error("TOKEN_INVALID");
   }
   return true;
 }
@@ -1299,11 +1304,43 @@ function slideMonthlyAndTicket(
     // ------------------------------------------------------------
     // 複数予約がある場合は、予約日が遅いものを月謝へ戻す
     // ------------------------------------------------------------
-    targetMonthReservations.sort(
-      (a, b) =>
-        new Date(b.rowData[RES_COL_DATE]).getTime() -
-        new Date(a.rowData[RES_COL_DATE]).getTime()
-    );
+    targetMonthReservations.sort((a, b) => {
+      const date1 = Utilities.formatDate(
+        a.rowData[RES_COL_DATE],
+        ssTimezone,
+        'yyyy-MM-dd'
+      );
+
+      const date2 = Utilities.formatDate(
+        b.rowData[RES_COL_DATE],
+        ssTimezone,
+        'yyyy-MM-dd'
+      );
+
+      // 予約日が新しい順
+      if (date1 !== date2) {
+        return date2.localeCompare(date1);
+      }
+
+      // 同じ日なら開始時刻が遅い順
+      const time1 = a.rowData[RES_COL_START_TIME] instanceof Date
+        ? Utilities.formatDate(
+            a.rowData[RES_COL_START_TIME],
+            ssTimezone,
+            'HH:mm'
+          )
+        : String(a.rowData[RES_COL_START_TIME]).trim();
+
+      const time2 = b.rowData[RES_COL_START_TIME] instanceof Date
+        ? Utilities.formatDate(
+            b.rowData[RES_COL_START_TIME],
+            ssTimezone,
+            'HH:mm'
+          )
+        : String(b.rowData[RES_COL_START_TIME]).trim();
+
+      return time2.localeCompare(time1);
+    });
 
     const targetReservation = targetMonthReservations[0];
 

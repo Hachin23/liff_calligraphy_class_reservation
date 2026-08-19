@@ -73,18 +73,47 @@ function createStudentSelect(students){
   });
 }
 
+// 入力値のバリデーション
+function validationInput(data) {
+  // 「e」が入力可能なので、文字列として整数形式をチェックする。
+  const isPositiveInteger = value => /^\d+$/.test(String(value)) && Number(value) > 0;
+
+  if (!isPositiveInteger(data.defaultCount)) {
+    throw new Error("デフォルトの稽古回数は1回以上の整数で登録してください");
+  }
+  if (!isPositiveInteger(data.currentCount)) {
+    throw new Error("今月の稽古回数は1回以上の整数で登録してください");
+  }
+  if (!isPositiveInteger(data.nextCount)) {
+    throw new Error("来月の稽古回数は1回以上の整数で登録してください");
+  }
+}
+
 document.getElementById("saveBtn").addEventListener("click", function(){
 
   const select = document.getElementById("studentSelect");
   const data = {
     userId: select.value,
     userName: select.options[select.selectedIndex].text,
-    defaultCount: Number(document.getElementById("defaultCount").value),
-    currentCount: Number(document.getElementById("currentCount").value),
-    nextCount: Number(document.getElementById("nextCount").value)
+    defaultCount: document.getElementById("defaultCount").value,
+    currentCount: document.getElementById("currentCount").value,
+    nextCount: document.getElementById("nextCount").value
   };
 
-  if(!confirm(`生徒名：${data.userName}\n稽古回数（デフォルト）：${data.defaultCount}\n今月の稽古回数：${data.currentCount}\n来月の稽古回数：${data.nextCount}\nこの内容で稽古回数を登録しますか？`)) return;
+  validationInput(data);
+
+  // バリデーション後に数値化
+  data.defaultCount = Number(data.defaultCount);
+  data.currentCount = Number(data.currentCount);
+  data.nextCount = Number(data.nextCount);
+
+  if(!confirm(
+    `生徒名：${data.userName}\n
+    稽古回数（デフォルト）：${data.defaultCount}\n
+    今月の稽古回数：${data.currentCount}\n
+    来月の稽古回数：${data.nextCount}\n
+    この内容で稽古回数を登録しますか？`
+  )) return;
 
   google.script.run
     .withSuccessHandler(()=>{
@@ -98,9 +127,6 @@ document.getElementById("saveBtn").addEventListener("click", function(){
 
 
 </script>
-
-
-
 </body>
 </html>
 
