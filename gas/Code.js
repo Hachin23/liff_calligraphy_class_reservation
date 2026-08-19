@@ -259,14 +259,16 @@ function fetchUserReservationsFromSpreadsheet(userId, targetYear, targetMonth) {
               return { success: false, message: "予約データの形式が不正です。" };
             }
 
-            const cancellableUntilString = Utilities.formatDate(cancellableUntilRaw, ssTimezone, 'yyyy-MM-dd HH:mm');
+          const cancellableUntilString = Utilities.formatDate(cancellableUntilRaw, ssTimezone, 'yyyy-MM-dd HH:mm');
+          const usageType = row[RES_COL_USAGE_TYPE];
             
             // 2. ステータスに基づきリストに分類
             if (status === '確定') {
               let myReservedDateObj = {};
               myReservedDateObj[fullDateKey] = {
                 reservationId: reservationId,
-                cancellableUntil: cancellableUntilString
+                cancellableUntil: cancellableUntilString,
+                usageType: usageType
               };
               myReservedDates.push(myReservedDateObj);
             } else if (status === '受講済み') {

@@ -48,17 +48,23 @@ function getAllReservationsForUser(userId) {
     const fullDateKey = `${dateString} ${startTimeStr}`;
 
     if (status === '確定') {
-       // キャンセル期限などの詳細も必要ならここで取得
-       const reservationId = row[RES_COL_RESERVATION_ID];
-       const cancellableUntilRaw = row[RES_COL_CANCELLABLE_UNTIL];
-       let cancellableUntilString = "";
-        if (cancellableUntilRaw instanceof Date) {
-            cancellableUntilString = Utilities.formatDate(cancellableUntilRaw, ssTimezone, 'yyyy-MM-dd HH:mm');
-        }
-       
-       let obj = {};
-       obj[fullDateKey] = { reservationId: reservationId, cancellableUntil: cancellableUntilString };
-       myReservedDates.push(obj);
+      // キャンセル期限などの詳細も必要ならここで取得
+      const reservationId = row[RES_COL_RESERVATION_ID];
+      const cancellableUntilRaw = row[RES_COL_CANCELLABLE_UNTIL];
+      const usageType = row[RES_COL_USAGE_TYPE];
+
+      let cancellableUntilString = "";
+      if (cancellableUntilRaw instanceof Date) {
+          cancellableUntilString = Utilities.formatDate(cancellableUntilRaw, ssTimezone, 'yyyy-MM-dd HH:mm');
+      }
+      
+      let obj = {};
+      obj[fullDateKey] = {
+        reservationId: reservationId,
+        cancellableUntil: cancellableUntilString,
+        usageType: usageType
+      };
+      myReservedDates.push(obj);
     } else if (status === '受講済み') {
        myAttendedDates.push(fullDateKey);
     }
