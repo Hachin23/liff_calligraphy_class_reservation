@@ -137,7 +137,8 @@ function getUserInfoFromSheet(userId) {
   const userTicketsCol = {
     userId: userTicketsHeader.indexOf("ユーザID"),
     remainingNumber: userTicketsHeader.indexOf("残数"),
-    expirationDate: userTicketsHeader.indexOf("有効期限")
+    expirationDate: userTicketsHeader.indexOf("有効期限"),
+    purchaseNumber: userTicketsHeader.indexOf("購入数")
   };
   
   // ユーザーのチケット情報を検索
@@ -162,6 +163,7 @@ function getUserInfoFromSheet(userId) {
         const obj = {};
         obj.remainingNumber = row[userTicketsCol.remainingNumber];
         obj.expirationDate = Utilities.formatDate(row[userTicketsCol.expirationDate], SPREADSHEET.getSpreadsheetTimeZone(), 'yyyy-MM-dd');
+        obj.purchaseNumber = row[userTicketsCol.purchaseNumber];
         return obj;
       }),
       remainingNumberTotal: remainingNumberTotal,

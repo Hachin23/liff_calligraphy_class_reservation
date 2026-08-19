@@ -576,7 +576,8 @@ function makeReservation(params) {
           ticketInfo: {
             dispInfo: validUserTicketsRows.map(ticket => ({
               remainingNumber: ticket.rowData[USER_TICKETS_COL_REMAINING_NUM],
-              expirationDate: Utilities.formatDate(ticket.rowData[USER_TICKETS_COL_EXPIRE_DATE], SPREADSHEET.getSpreadsheetTimeZone(), 'yyyy-MM-dd')
+              expirationDate: Utilities.formatDate(ticket.rowData[USER_TICKETS_COL_EXPIRE_DATE], ssTimezone, 'yyyy-MM-dd'),
+              purchaseNumber: ticket.rowData[USER_TICKETS_COL_PURCHASE_NUM]
             })),
             remainingNumberTotal: remainingNumberTotal,
             // チケット購入履歴があるか
@@ -944,7 +945,8 @@ function handleCancelReservation(params) {
           ticketInfo: {
             dispInfo: availableUserTickets.map(row => ({
               remainingNumber: row[USER_TICKETS_COL_REMAINING_NUM],
-              expirationDate: Utilities.formatDate(row[USER_TICKETS_COL_EXPIRE_DATE], ssTimezone, 'yyyy-MM-dd')
+              expirationDate: Utilities.formatDate(row[USER_TICKETS_COL_EXPIRE_DATE], ssTimezone, 'yyyy-MM-dd'),
+              purchaseNumber: row[USER_TICKETS_COL_PURCHASE_NUM]
             })),
             remainingNumberTotal: remainingNumberTotal,
             // チケット購入履歴があるか
