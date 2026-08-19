@@ -873,23 +873,178 @@ function deletePastReservations() {
 // 生徒の来月の授業回数を今月の授業回数に修正.来月の授業回数は初回の選択値を設定.
 // generateReservationsList内で呼び出し（月が切り替わるタイミングで呼び出し）
 function monthlyMaintenance(event) {
+  // トリガー実行の時のみ実行（手動実行時はスルー）
   if (event) {
-    const ss = SpreadsheetApp.getActiveSpreadsheet();
-    const userSheet = ss.getSheetByName(SHEET_NAME_USER_MONTHLY_SUBSCRIPTIONS);
-    const userData = userSheet.getDataRange().getValues();
-    
-    // 列の番号（実際のシートに合わせて調整してください）
-    const COL_DEFAULT = 2; // D列：デフォルト回数
-    const COL_CURRENT = 3; // E列：今月の回数
-    const COL_NEXT    = 4; // F列：来月の回数
-    
-    for (let i = 1; i < userData.length; i++) {
-      userData[i][COL_CURRENT] = userData[i][COL_NEXT];
-      userData[i][COL_NEXT] = userData[i][COL_DEFAULT];
+    // ===========================================
+    // 稽古回数のスライド処理実行
+    // ===========================================
+    const userMonthlySubscriptionsSheet = SPREADSHEET.getSheetByName(SHEET_NAME_USER_MONTHLY_SUBSCRIPTIONS);
+    const reservationsSheet = SPREADSHEET.getSheetByName(SHEET_NAME_RESERVATIONS);
+    const userTicketSheet = SPREADSHEET.getSheetByName(SHEET_NAME_USER_TICKETS);
+
+    if (!userMonthlySubscriptionsSheet || !reservationsSheet || !userTicketSheet) {
+      throw new Error("必要なシートが見つかりません。");
     }
-    userSheet
-    .getRange(1, 1, userData.length, userData[0].length)
-    .setValues(userData);
+
+    const userMonthlySubscriptionsData = userMonthlySubscriptionsSheet.getDataRange().getValues();
+    
+    // 配列上の列番号
+    const COL_USER_ID = 0;  // A列
+    const COL_DEFAULT = 2;  // C列
+    const COL_CURRENT = 3;  // D列
+    const COL_NEXT = 4;     // E列
+    
+    for (let i = 1; i < userMonthlySubscriptionsData.length; i++) {
+      const row = userMonthlySubscriptionsData[i];
+      const userId = row[COL_USER_ID];
+
+      if (!userId) {
+        continue;
+      }
+      // ===========================================
+      // 切り替え前の回数を取得
+      // ===========================================
+      const newCurrentCount = Number(row[COL_NEXT]) || 0;
+      const newNextCount = Number(row[COL_DEFAULT]) || 0;
+
+      // ===========================================
+      // 現在のチケット予約を一旦解除
+      // ===========================================
+      // 今月・来月をまたいでチケットを再配置するため、
+      // 最初に既存のチケット予約をすべて解除する。
+      const ticketReservationData = getTicketReservations(
+        reservationsSheet,
+        userTicketSheet,
+        userId
+      );
+
+      clearTicketReservations(
+        reservationsSheet,
+        userTicketSheet,
+        ticketReservationData
+      );
+      
+      // ===========================================
+      // 現在の月謝予約を取得
+      // ===========================================
+      let monthlyReservations = getMonthlyLessonReservations(reservationsSheet, userId);
+
+      // ===========================================
+      // 今月の月謝枠を調整
+      // ===========================================
+      const currentReservations = monthlyReservations.thisMonth;
+
+      if (currentReservations.length < newCurrentCount) {
+        const convertCount =
+          newCurrentCount - currentReservations.length;
+
+        const monthlyData =
+          getMonthlyTicketReservations(
+            reservationsSheet,
+            userTicketSheet,
+            userId
+          );
+
+        convertTicketReservationsToMonthly(
+          reservationsSheet,
+          userTicketSheet,
+          monthlyData.thisMonth,
+          convertCount
+        );
+
+      } else if (currentReservations.length > newCurrentCount) {
+        const convertCount = currentReservations.length - newCurrentCount;
+        convertMonthlyReservationsToTicket(
+          reservationsSheet,
+          userTicketSheet,
+          userId,
+          currentReservations,
+          convertCount
+        );
+      }
+
+      // ===========================================
+      // 来月の月謝枠を調整
+      // ===========================================
+      monthlyReservations = getMonthlyLessonReservations(reservationsSheet, userId);
+      const nextReservations = monthlyReservations.nextMonth;
+
+      if (nextReservations.length < newNextCount) {
+        const convertCount = newNextCount - nextReservations.length;
+        const monthlyData = getMonthlyTicketReservations(reservationsSheet, userTicketSheet, userId);
+
+        convertTicketReservationsToMonthly(
+          reservationsSheet,
+          userTicketSheet,
+          monthlyData.nextMonth,
+          convertCount
+        );
+
+      } else if (nextReservations.length > newNextCount) {
+        const convertCount = nextReservations.length - newNextCount;
+
+        convertMonthlyReservationsToTicket(
+          reservationsSheet,
+          userTicketSheet,
+          userId,
+          nextReservations,
+          convertCount
+        );
+      }
+      // ===========================================
+      // 今月・来月のチケット予約を再配置
+      // ===========================================
+      const updatedTicketReservationData =
+        getTicketReservations(
+          reservationsSheet,
+          userTicketSheet,
+          userId
+        );
+
+      reassignTicketReservations(
+        reservationsSheet,
+        userTicketSheet,
+        updatedTicketReservationData
+      );
+
+      // ===========================================
+      // 月謝回数を更新
+      // ===========================================
+      row[COL_CURRENT] = newCurrentCount;
+      row[COL_NEXT] = newNextCount;
+
+      syncUserFullData(userId);
+    }
+    
+    // ===========================================
+    // 月謝回数の更新をまとめて反映
+    // ===========================================
+    userMonthlySubscriptionsSheet
+      .getRange(1, 1, userMonthlySubscriptionsData.length, userMonthlySubscriptionsData[0].length)
+      .setValues(userMonthlySubscriptionsData);
+    
+    // ===========================================
+    // チケットステータスを「有効期限切れ」に更新
+    // ===========================================
+
+    // 有効期限が切れているチケットでステータスが「有効」のチケットを取得
+    const ssTimezone = SPREADSHEET.getSpreadsheetTimeZone();
+    const dateStr = Utilities.formatDate(new Date(), ssTimezone, "yyyy-MM-dd");
+    const userTicketsRowsWithIndex = userTicketSheet.getDataRange().getValues().slice(1).map((row, index) => ({
+      rowIndex: index + 1,
+      rowData: row
+    }));
+    const targetUserTicketRow = userTicketsRowsWithIndex.filter(ticket =>
+      // 有効期限が切れている
+      Utilities.formatDate(ticket.rowData[USER_TICKETS_COL_EXPIRE_DATE], ssTimezone, 'yyyy-MM-dd') < dateStr &&
+      ticket.rowData[USER_TICKETS_COL_STATUS] === "有効"
+    )
+    
+    targetUserTicketRow.forEach(ticket => {
+      userTicketSheet
+      .getRange(ticket.rowIndex + 1, USER_TICKETS_COL_STATUS + 1)
+      .setValue("有効期限切れ");
+    });
   }
 }
 
@@ -914,13 +1069,14 @@ function frequentCalendarSyncAndMaintenance() {
 
     const ssTimezone = SPREADSHEET.getSpreadsheetTimeZone();
     const resSheet = SPREADSHEET.getSheetByName(SHEET_NAME_RESERVATIONS);
+    const userTicketSheet = SPREADSHEET.getSheetByName(SHEET_NAME_USER_TICKETS);
     const calendar = CalendarApp.getCalendarById(ADMIN_CALENDAR_ID);
     const now = new Date();
 
     const dataRange = resSheet.getDataRange();
     const values = dataRange.getValues();
 
-    if (!resSheet || !calendar) {
+    if (!resSheet || !calendar || !userTicketSheet) {
         if (resSheet) updatePastReservationsToAttended(resSheet, values, now); // 過去の予約更新は継続
         throw new Error('指定のカレンダーが存在しないため、過去の予約の更新のみ実行しました。');
     }
@@ -1114,9 +1270,38 @@ function frequentCalendarSyncAndMaintenance() {
             Logger.log(`${rangesToClear.length} 件のシート上のカレンダーIDをクリアしました。`);
         }
     }
-    Logger.log('高頻度カレンダーSyncおよびメンテナンス処理が完了しました。');
-    
 
+    // ===========================================
+    // チケットステータスを「消費済み」に更新
+    // ===========================================
+
+    // 有効期限が有効、残数が「0」、ステータスが「有効」のチケットを取得
+    const ssTimezone = SPREADSHEET.getSpreadsheetTimeZone();
+    const dateStr = Utilities.formatDate(new Date(), ssTimezone, "yyyy-MM-dd");
+    const userTicketsRowsWithIndex = userTicketSheet.getDataRange().getValues().slice(1).map((row, index) => ({
+      rowIndex: index + 1,
+      rowData: row
+    }));
+
+    const targetUserTicketRow = userTicketsRowsWithIndex.filter(ticket =>
+      Utilities.formatDate(ticket.rowData[USER_TICKETS_COL_EXPIRE_DATE], ssTimezone, 'yyyy-MM-dd') >= dateStr &&
+      ticket.rowData[USER_TICKETS_COL_STATUS] === "有効" &&
+      Number(ticket.rowData[USER_TICKETS_COL_REMAINING_NUM]) === 0
+    )
+    
+    targetUserTicketRow.forEach(ticket => {
+      const existReservation = values.some(reservation =>
+        reservation[RES_COL_TICKET_ID] === ticket.rowData[USER_TICKETS_COL_TICKET_ID] &&
+        reservation[RES_COL_STATUS] === "確定"
+      )
+      if (!existReservation) {
+        userTicketSheet
+        .getRange(ticket.rowIndex + 1, USER_TICKETS_COL_STATUS + 1)
+        .setValue("消費済み");
+      }
+    });
+
+    Logger.log('高頻度カレンダーSyncおよびメンテナンス処理が完了しました。');
   } catch(e) {
     Logger.log(`[FATAL ERROR] カレンダー同期中にエラーが発生しました: ${e.toString()}`);
     throw e;
@@ -1588,7 +1773,7 @@ function reassignTicketReservations(
 ) {
 
   const ssTimezone = SPREADSHEET.getSpreadsheetTimeZone();
-  
+
   // 全チケットに紐づいていた予約を1つの配列にまとめる
   const reservations = ticketReservationData
     .flatMap(ticketInfo => ticketInfo.reservations)
