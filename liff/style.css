@@ -86,7 +86,6 @@ select:focus {
 .ticket-popup {
   display: none;
   position: fixed;
-  transform: translate(-50%, -50%);
   background: white;
   border: 1px solid #ccc;
   border-radius: 8px;
@@ -101,7 +100,6 @@ select:focus {
 .user-popup {
   display: none;
   position: fixed;
-  transform: translate(-50%, -50%);
   background: white;
   border: 1px solid #ccc;
   border-radius: 8px;
