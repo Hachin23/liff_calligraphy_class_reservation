@@ -1073,12 +1073,12 @@ async function getWorkersDataJson(userId) {
 function setupTicketClick(ticketInfo) {
 
   const userTicketInfo = document.getElementById("userTicketInfo");
-  // 既存のポップアップを閉じる
-  userPopup.style.display = "none";
   if (!userTicketInfo) return;
 
   userTicketInfo.addEventListener("click", function (e) {
     e.stopPropagation();
+    // 既存のポップアップを閉じる
+    userPopup.style.display = "none";
     const ticketDetail = ticketInfo.dispInfo
       .map(ticket => `
       ${ticket.purchaseNumber}回券  残数：${ticket.remainingNumber}/${ticket.purchaseNumber}回<br>
@@ -1113,11 +1113,10 @@ function setupTicketClickListener() {
 function setupUserClick(currentUser, reservations) {
   const userName = document.getElementById("userName");
   if (!userName) return;
-
-  // 既存のポップアップを閉じる
-  ticketPopup.style.display = "none";
   userName.addEventListener("click", function (e) {
     e.stopPropagation();
+    // 既存のポップアップを閉じる
+    ticketPopup.style.display = "none";
     // 予約情報の表示
     const userReservationList = reservations
       .map(reservation => {
