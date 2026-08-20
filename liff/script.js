@@ -1120,7 +1120,7 @@ function setupUserClick(currentUser, reservations) {
         const reservationDetail = Object.values(reservation)[0];
         const usageTypeIcon = reservationDetail.usageType === "月謝" ? `📅` : `🎫`;
         
-        return `${reservationDate}～  ${usageTypeIcon}`
+        return `${reservationDate}～  ${usageTypeIcon}<br>`
       });
 
     popup.innerHTML = `

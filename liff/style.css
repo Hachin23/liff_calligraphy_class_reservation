@@ -99,6 +99,22 @@ select:focus {
   box-shadow: 0 4px 12px rgba(0,0,0,0.2);
 }
 
+/* 個別にチケットの回数と期限を表示 */
+.user-popup {
+  display: none;
+  position: fixed;
+  left: 50%;
+  top: 25%;
+  transform: translate(-50%, -50%);
+  background: white;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  padding: 16px;
+  z-index: 1000;
+  min-width: 220px;
+  font-size: 0.8em;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
 
 /* ==================================== */
 /* クラス・回数選択エリア */
