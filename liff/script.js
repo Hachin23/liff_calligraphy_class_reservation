@@ -1074,7 +1074,7 @@ function setupTicketClick(ticketInfo) {
 
   const userTicketInfo = document.getElementById("userTicketInfo");
   // 既存のポップアップを閉じる
-  ticketPopup.style.display = "none";
+  userPopup.style.display = "none";
   if (!userTicketInfo) return;
 
   userTicketInfo.addEventListener("click", function (e) {
@@ -1114,6 +1114,8 @@ function setupUserClick(currentUser, reservations) {
   const userName = document.getElementById("userName");
   if (!userName) return;
 
+  // 既存のポップアップを閉じる
+  ticketPopup.style.display = "none";
   userName.addEventListener("click", function (e) {
     e.stopPropagation();
     // 予約情報の表示
