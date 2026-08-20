@@ -43,6 +43,10 @@ const modalConfirmBtn = document.getElementById('modal-confirm-btn');
 const modalCancelBtn = document.getElementById('modal-cancel-btn');
 let currentConfirmCallback = null;
 
+// ポップアップ要素
+const ticketPopup = document.getElementById('ticketPopup');
+const userPopup = document.getElementById('userPopup');
+
 // ====================================
 // 2. メイン処理と初期化
 // ====================================
@@ -1069,9 +1073,8 @@ async function getWorkersDataJson(userId) {
 function setupTicketClick(ticketInfo) {
 
   const userTicketInfo = document.getElementById("userTicketInfo");
-  const popup = document.getElementById("ticketPopup");
   // 既存のポップアップを閉じる
-  popup.style.display = "none";
+  ticketPopup.style.display = "none";
   if (!userTicketInfo) return;
 
   userTicketInfo.addEventListener("click", function (e) {
@@ -1083,33 +1086,31 @@ function setupTicketClick(ticketInfo) {
     `)
     .join("<hr>");
 
-    popup.innerHTML = `
+    ticketPopup.innerHTML = `
       🎫 チケット<br>
       ${ticketDetail}
     `;
-    popup.style.display = "block";
+    ticketPopup.style.display = "block";
   });
 }
 
 function setupTicketClickListener() {
   document.addEventListener("click", function (e) {
-    const popup = document.getElementById("ticketPopup");
     const userTicketInfo = document.getElementById("userTicketInfo");
 
-    if (!popup || popup.style.display !== "block") return;
+    if (!ticketPopup || ticketPopup.style.display !== "block") return;
 
     if (
-      popup.style.display === "block" &&
-      !popup.contains(e.target) &&
+      ticketPopup.style.display === "block" &&
+      !ticketPopup.contains(e.target) &&
       e.target !== userTicketInfo
     ) {
-      popup.style.display = "none";
+      ticketPopup.style.display = "none";
     }
   });
 }
 
 function setupUserClick(currentUser, reservations) {
-  const popup = document.getElementById("userPopup");
   const userName = document.getElementById("userName");
   if (!userName) return;
 
@@ -1126,32 +1127,28 @@ function setupUserClick(currentUser, reservations) {
       })
       .join("<br>");
 
-    popup.innerHTML = `
+    userPopup.innerHTML = `
       👤ユーザー詳細<br>
       クラス: ${currentUser.className}<br>
       予約一覧<br>
       ${userReservationList}
     `;
-    popup.style.display = "block";
+    userPopup.style.display = "block";
   });
 }
 
 function setupUserClickListener() {
   document.addEventListener("click", function (e) {
-    const popup = document.getElementById("userPopup");
-    // 既存のポップアップを閉じる
-    popup.style.display = "none";
-
     const userName = document.getElementById("userName");
 
-    if (!popup || popup.style.display !== "block") return;
+    if (!userPopup || userPopup.style.display !== "block") return;
 
     if (
-      popup.style.display === "block" &&
-      !popup.contains(e.target) &&
+      userPopup.style.display === "block" &&
+      !userPopup.contains(e.target) &&
       e.target !== userName
     ) {
-      popup.style.display = "none";
+      userPopup.style.display = "none";
     }
   });
 }
