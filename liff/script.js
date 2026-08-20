@@ -1138,7 +1138,7 @@ function setupUserClick(currentUser, reservations) {
       }, {})
     )
     // 月を新しい順に
-    .sort(([monthA], [monthB]) => monthB.localeCompare(monthA))
+    .sort(([monthA], [monthB]) => monthA.localeCompare(monthB))
     // 各月の予約を日時順に
     .map(([monthKey, monthReservations]) => {
       monthReservations.sort((a, b) =>
@@ -1161,7 +1161,7 @@ function setupUserClick(currentUser, reservations) {
       return `
         <div class="reservation-month">
           <div class="reservation-month-title">${year}年${Number(month)}月</div>
-          ${reservationList}
+          ${reservationList}<br>
         </div>
       `;
     })
@@ -1169,7 +1169,7 @@ function setupUserClick(currentUser, reservations) {
 
     userPopup.innerHTML = `
       👤ユーザー詳細<br>
-      クラス: ${currentUser.className}<br>
+      クラス: ${currentUser.className}<br><br>
       予約一覧<br>
       ${userReservationList}
     `;
