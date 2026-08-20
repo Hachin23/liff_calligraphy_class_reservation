@@ -1070,6 +1070,8 @@ function setupTicketClick(ticketInfo) {
 
   const userTicketInfo = document.getElementById("userTicketInfo");
   const popup = document.getElementById("ticketPopup");
+  // 既存のポップアップを閉じる
+  popup.style.display = "none";
   if (!userTicketInfo) return;
 
   userTicketInfo.addEventListener("click", function (e) {
@@ -1120,11 +1122,12 @@ function setupUserClick(currentUser, reservations) {
         const reservationDetail = Object.values(reservation)[0];
         const usageTypeIcon = reservationDetail.usageType === "月謝" ? `📅` : `🎫`;
         
-        return `${reservationDate}～  ${usageTypeIcon}<br>`
-      });
+        return `${reservationDate}～  ${usageTypeIcon}`
+      })
+      .join("<br>");
 
     popup.innerHTML = `
-      👤ユーザー情報詳細<br>
+      👤ユーザー詳細<br>
       クラス: ${currentUser.className}<br>
       予約一覧<br>
       ${userReservationList}
@@ -1134,8 +1137,11 @@ function setupUserClick(currentUser, reservations) {
 }
 
 function setupUserClickListener() {
-    document.addEventListener("click", function (e) {
+  document.addEventListener("click", function (e) {
     const popup = document.getElementById("userPopup");
+    // 既存のポップアップを閉じる
+    popup.style.display = "none";
+
     const userName = document.getElementById("userName");
 
     if (!popup || popup.style.display !== "block") return;
