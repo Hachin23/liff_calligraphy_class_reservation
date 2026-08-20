@@ -20,6 +20,13 @@
   .btn-submit:hover { background-color: #357ae8; }
   .info-text { font-size: 0.8rem; color: #666; margin-top: 5px; }
   #loader { color: #4285f4; font-weight: bold; }
+  .attended-cancel-label {
+    display: flex !important;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+    width: fit-content;
+  }
 </style>
 </head>
 <body>
@@ -37,6 +44,15 @@
     <select id="lessonSelect" disabled>
       <option value="">先に生徒を選択してください</option>
     </select>
+
+    <label for="attendedCancel" class="attended-cancel-label">
+      <input
+        type="checkbox"
+        id="attendedCancel"
+        onchange="onAttendedCancelChange()"
+      >
+      受講済みも対象
+    </label>
     
     <button class="btn-submit" onclick="submitAdminCancel()">キャンセルを確定する</button>
   </div>
@@ -74,48 +90,14 @@
     function onStudentChange() {
       const userId = document.getElementById('studentSelect').value;
       const lSelect = document.getElementById('lessonSelect');
-      const seatInfo = document.getElementById('seatInfo');
-
-      lSelect.innerHTML = '';
 
       if (!userId) {
-        lSelect.innerHTML = '<option value="">先に生徒を選択してください</option>';
+        lSelect.innerHTML =
+          '<option value="">先に生徒を選択してください</option>';
         lSelect.disabled = true;
         return;
       }
-
-      google.script.run
-        .withSuccessHandler(function(reservations) {
-
-          lSelect.innerHTML = '';
-
-          if (!reservations || reservations.length === 0) {
-            lSelect.innerHTML = '<option value="">予約はありません</option>';
-            lSelect.disabled = true;
-            seatInfo.textContent = '';
-            return;
-          }
-
-          lSelect.disabled = false;
-
-          const defaultOpt = document.createElement('option');
-          defaultOpt.value = "";
-          defaultOpt.textContent = "-- キャンセルする予約を選択 --";
-          lSelect.appendChild(defaultOpt);
-
-          reservations.forEach(reservation => {
-
-            const opt = document.createElement('option');
-            opt.value = reservation.reservationId;
-            opt.dataset.className = reservation.className;
-
-            opt.textContent =
-              `${reservation.date} ${reservation.startTime}～ (${reservation.className})`;
-
-            lSelect.appendChild(opt);
-          });
-        })
-        .getUserReservations(userId);
+      loadUserReservations(userId);
     }
 
     /**
@@ -149,6 +131,57 @@
           alert(res);
         })
         .adminProxyCancel(userId, reservationId);
+    }
+
+    function onAttendedCancelChange() {
+      // 生徒が選択されている場合だけ再取得
+      const userId = document.getElementById('studentSelect').value;
+      if (!userId) return;
+
+      loadUserReservations(userId);
+    }
+
+    function loadUserReservations(userId) {
+      const lSelect = document.getElementById('lessonSelect');
+      const seatInfo = document.getElementById('seatInfo');
+
+      const attendedCancel =
+        document.getElementById('attendedCancel').checked;
+
+      lSelect.innerHTML = '';
+      lSelect.disabled = true;
+
+      google.script.run
+        .withSuccessHandler(function(reservations) {
+
+          lSelect.innerHTML = '';
+
+          if (!reservations || reservations.length === 0) {
+            lSelect.innerHTML = '<option value="">予約はありません</option>';
+            seatInfo.textContent = '';
+            return;
+          }
+
+          lSelect.disabled = false;
+
+          const defaultOpt = document.createElement('option');
+          defaultOpt.value = "";
+          defaultOpt.textContent = "-- キャンセルする予約を選択 --";
+          lSelect.appendChild(defaultOpt);
+
+          reservations.forEach(reservation => {
+            const opt = document.createElement('option');
+
+            opt.value = reservation.reservationId;
+            opt.dataset.className = reservation.className;
+
+            opt.textContent =
+              `${reservation.date} ${reservation.startTime}～ (${reservation.className})`;
+
+            lSelect.appendChild(opt);
+          });
+        })
+        .getUserReservations(userId, attendedCancel);
     }
   </script>
 </body>

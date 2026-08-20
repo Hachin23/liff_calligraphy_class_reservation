@@ -712,7 +712,7 @@ function handleCancelReservation(params) {
       }
 
       // 2. ステータスの確認
-      if (values[COL_STATUS_IDX] !== '確定') {
+      if (!admin && values[COL_STATUS_IDX] !== '確定') {
           return { success: false, message: "この予約は既にキャンセル済みか、確定していません。" };
       }
 
