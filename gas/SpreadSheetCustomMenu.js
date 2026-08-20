@@ -1401,33 +1401,38 @@ function handleEdit(e) {
         if (range.getColumn() !== 4 && range.getColumn() !== 5) {
           return;
         }
-
-        const reservationsSheet = SPREADSHEET.getSheetByName(SHEET_NAME_RESERVATIONS);
-        const userTicketSheet = SPREADSHEET.getSheetByName(SHEET_NAME_USER_TICKETS);
-        const monthlyData = getMonthlyTicketReservations(reservationsSheet, userTicketSheet, userId);
-        const monthlyReservations = getMonthlyLessonReservations(reservationsSheet, userId);
-
-        if (range.getColumn() === 4) {
-          const currentCount = sheet.getRange(row, 4).getValue();
-          const currentMonthlyCount = monthlyReservations.thisMonth.length;
-
-          if (currentMonthlyCount < currentCount) {
-            convertTicketReservationsToMonthly(reservationsSheet, userTicketSheet, monthlyData.thisMonth, currentCount - currentMonthlyCount);
-          } else if (currentMonthlyCount > currentCount) {
-            const currentConvertCount = currentMonthlyCount - currentCount;
-            convertMonthlyReservationsToTicket(reservationsSheet, userTicketSheet, userId, monthlyReservations.thisMonth, currentConvertCount);
+        const lock = LockService.getScriptLock();
+        lock.waitLock(10000);
+        try {
+          const reservationsSheet = SPREADSHEET.getSheetByName(SHEET_NAME_RESERVATIONS);
+          const userTicketSheet = SPREADSHEET.getSheetByName(SHEET_NAME_USER_TICKETS);
+          const monthlyData = getMonthlyTicketReservations(reservationsSheet, userTicketSheet, userId);
+          const monthlyReservations = getMonthlyLessonReservations(reservationsSheet, userId);
+  
+          if (range.getColumn() === 4) {
+            const currentCount = sheet.getRange(row, 4).getValue();
+            const currentMonthlyCount = monthlyReservations.thisMonth.length;
+  
+            if (currentMonthlyCount < currentCount) {
+              convertTicketReservationsToMonthly(reservationsSheet, userTicketSheet, monthlyData.thisMonth, currentCount - currentMonthlyCount);
+            } else if (currentMonthlyCount > currentCount) {
+              const currentConvertCount = currentMonthlyCount - currentCount;
+              convertMonthlyReservationsToTicket(reservationsSheet, userTicketSheet, userId, monthlyReservations.thisMonth, currentConvertCount);
+            }
+          } else if (range.getColumn() === 5) {
+            const nextCount = sheet.getRange(row, 5).getValue();
+            const nextMonthlyCount = monthlyReservations.nextMonth.length;
+            if (nextMonthlyCount < nextCount) {
+              convertTicketReservationsToMonthly(reservationsSheet, userTicketSheet, monthlyData.nextMonth, nextCount - nextMonthlyCount);
+            } else if (nextMonthlyCount > nextCount) {
+              const nextConvertCount = nextMonthlyCount - nextCount;
+              convertMonthlyReservationsToTicket(reservationsSheet, userTicketSheet, userId, monthlyReservations.nextMonth, nextConvertCount);
+            }
           }
-        } else if (range.getColumn() === 5) {
-          const nextCount = sheet.getRange(row, 5).getValue();
-          const nextMonthlyCount = monthlyReservations.nextMonth.length;
-          if (nextMonthlyCount < nextCount) {
-            convertTicketReservationsToMonthly(reservationsSheet, userTicketSheet, monthlyData.nextMonth, nextCount - nextMonthlyCount);
-          } else if (nextMonthlyCount > nextCount) {
-            const nextConvertCount = nextMonthlyCount - nextCount;
-            convertMonthlyReservationsToTicket(reservationsSheet, userTicketSheet, userId, monthlyReservations.nextMonth, nextConvertCount);
-          }
+          syncUserFullData(userId);
+        } finally {
+          lock.releaseLock();
         }
-        syncUserFullData(userId);
       }
     }
     return;
