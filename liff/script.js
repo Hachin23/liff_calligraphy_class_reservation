@@ -1118,15 +1118,54 @@ function setupUserClick(currentUser, reservations) {
     // 既存のポップアップを閉じる
     ticketPopup.style.display = "none";
     // 予約情報の表示
-    const userReservationList = reservations
-      .map(reservation => {
+    const userReservationList = Object.entries(
+      reservations.reduce((groups, reservation) => {
         const reservationDate = Object.keys(reservation)[0];
         const reservationDetail = Object.values(reservation)[0];
-        const usageTypeIcon = reservationDetail.usageType === "月謝" ? `📅` : `🎫`;
-        
-        return `${reservationDate}～  ${usageTypeIcon}`
-      })
-      .join("<br>");
+
+        const monthKey = reservationDate.slice(0, 7);
+
+        if (!groups[monthKey]) {
+          groups[monthKey] = [];
+        }
+
+        groups[monthKey].push({
+          reservationDate,
+          reservationDetail
+        });
+
+        return groups;
+      }, {})
+    )
+    // 月を新しい順に
+    .sort(([monthA], [monthB]) => monthB.localeCompare(monthA))
+    // 各月の予約を日時順に
+    .map(([monthKey, monthReservations]) => {
+      monthReservations.sort((a, b) =>
+        a.reservationDate.localeCompare(b.reservationDate)
+      );
+
+      const [year, month] = monthKey.split("-");
+
+      const reservationList = monthReservations
+        .map(({ reservationDate, reservationDetail }) => {
+          const usageTypeIcon =
+            reservationDetail.usageType === "月謝" ? "📅" : "🎫";
+
+          return `
+            <div>${reservationDate} ${usageTypeIcon}</div>
+          `;
+        })
+        .join("");
+
+      return `
+        <div class="reservation-month">
+          <div class="reservation-month-title">${year}年${Number(month)}月</div>
+          ${reservationList}
+        </div>
+      `;
+    })
+    .join("");
 
     userPopup.innerHTML = `
       👤ユーザー詳細<br>
