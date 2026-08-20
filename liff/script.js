@@ -1090,10 +1090,6 @@ function setupTicketClick(ticketInfo) {
       🎫 チケット<br>
       ${ticketDetail}
     `;
-
-    ticketPopup.style.left = `${e.clientX + 10}px`;
-    ticketPopup.style.top = `${e.clientY + 10}px`;
-
     ticketPopup.style.display = "block";
   });
 }
@@ -1138,10 +1134,6 @@ function setupUserClick(currentUser, reservations) {
       予約一覧<br>
       ${userReservationList}
     `;
-
-    userPopup.style.left = `${e.clientX + 10}px`;
-    userPopup.style.top = `${e.clientY + 10}px`;    
-
     userPopup.style.display = "block";
   });
 }
