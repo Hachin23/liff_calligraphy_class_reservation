@@ -541,7 +541,7 @@ function renderReservationCalendar(date, status, capacityData = {}, myReservatio
 // 日付がクリックされたときの処理
 // ------------------------------
 function selectDate(dateString) {
-  selectedDateText.textContent = `📅 ${dateString} 稽古一覧`;
+  selectedDateText.textContent = `🗓️ ${dateString} 稽古一覧`;
   courseName.textContent = "クラス：一般・おとな美文字";
   closeModalButton.addEventListener('click', closeReservationModal);
   selectionDitailsModel.classList.remove('hidden');
@@ -1150,7 +1150,7 @@ function setupUserClick(currentUser, reservations) {
       const reservationList = monthReservations
         .map(({ reservationDate, reservationDetail }) => {
           const usageTypeIcon =
-            reservationDetail.usageType === "月謝" ? "📅" : "🎫";
+            reservationDetail.usageType === "月謝" ? "🗓️" : "🎫";
 
           return `
             <div>${reservationDate} ${usageTypeIcon}</div>
