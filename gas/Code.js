@@ -657,7 +657,8 @@ function handleCancelReservation(params) {
     try {
 
       const ssTimezone = SPREADSHEET.getSpreadsheetTimeZone();
-      const { userId, reservationId, admin = false } = params;
+      const { userId, reservationId, admin = false, attendedCancel = false } = params;
+      const allowAttendedCancel = admin && attendedCancel;
 
       if (!userId || !reservationId) {
         return { success: false, message: "必須パラメータが不足しています。" };
@@ -775,7 +776,10 @@ function handleCancelReservation(params) {
 
         const reservations = reservationsRowsWithIndex.filter(reservation =>
           reservation.rowData[RES_COL_TICKET_ID] === ticketId &&
-          reservation.rowData[RES_COL_STATUS] === "確定"
+          (
+            reservation.rowData[RES_COL_STATUS] === "確定" ||
+            (allowAttendedCancel && reservation.rowData[RES_COL_STATUS] === "受講済み")
+          )
         )
         .sort((reservation1, reservation2) => {
         // 予約日が新しい順

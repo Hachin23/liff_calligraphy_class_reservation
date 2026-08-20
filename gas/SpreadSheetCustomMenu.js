@@ -190,10 +190,10 @@ function getReservationsForUI() {
 /**
  * 実際のキャンセル処理（管理者による代理実行）
  */
-function adminProxyCancel(userId, reservationId) {
+function adminProxyCancel(userId, reservationId, attendedCancel) {
   try {
     // デバッグ・確認用メッセージ
-    result = handleCancelReservation({ userId: userId, reservationId: reservationId, admin: true });
+    result = handleCancelReservation({ userId: userId, reservationId: reservationId, admin: true,  attendedCancel: attendedCancel});
     const msg = `${result.message}\n生徒ID: ${userId}\n予約ID: ${reservationId}`;
     console.log(msg);
     return msg;

@@ -125,12 +125,14 @@
         return;
       }
 
+      const attendedCancel = document.getElementById('attendedCancel').checked;
+
       // ご指定の引数順で GAS を呼び出し
       google.script.run
         .withSuccessHandler(function(res) {
           alert(res);
         })
-        .adminProxyCancel(userId, reservationId);
+        .adminProxyCancel(userId, reservationId, attendedCancel);
     }
 
     function onAttendedCancelChange() {
