@@ -62,6 +62,8 @@ async function main() {
     setupModalListeners();
     // チケット部分のクリック設定
     setupTicketClickListener();
+    // ユーザー部分のクリック設定
+    setupUserClickListener();
 
       console.time("初期表示までの時間 start");
 
@@ -292,6 +294,7 @@ async function fetchAndRenderCapacity(date) {
   if (fullCache) {
     console.log("全データ有効なキャッシュがあるため、描画のみ実行");
     updateClassInfoUI(currentUser, monthKey); // UIの文字更新
+    setupUserClick(currentUser, fullCache.reserved); //クリックイベント追加
     renderReservationCalendar(date, 'loaded', fullCache.capacity, fullCache.reserved, fullCache.attended);
     return;
   }
@@ -315,6 +318,7 @@ async function fetchAndRenderCapacity(date) {
       const capCacheData = AVAILABLE_CAPACITY_DATA[monthKey]?.data;
       const resCacheData = MY_RESERVIONS[monthKey]?.data;
       const attCacheData = MY_ATTENDED_DATES?.data;
+      setupUserClick(currentUser, resCacheData); //クリックイベント追加
       renderReservationCalendar(date, 'loaded', capCacheData, resCacheData, attCacheData);
     }
   } catch (e) {
@@ -1045,7 +1049,7 @@ function updateClassInfoUI(currentUser, monthKey) {
   
   classInfo.innerHTML = `
     <span id='userName'>   👤 ${currentUser.displayName}</span>
-    <span id='userClassName'>  ┊  🖌️ ${currentUser.className} ${monthlySubscription}</span>
+    <span id='userClassName'>  ┊  ${monthlySubscription}</span>
     ${ticketInfo}
   `;
 
@@ -1072,7 +1076,7 @@ function setupTicketClick(ticketInfo) {
     e.stopPropagation();
     const ticketDetail = ticketInfo.dispInfo
       .map(ticket => `
-      残数：${ticket.remainingNumber}回<br>
+      ${ticket.purchaseNumber}回券  残数：${ticket.remainingNumber}/${ticket.purchaseNumber}回<br>
       有効期限：${ticket.expirationDate}
     `)
     .join("<hr>");
@@ -1102,8 +1106,56 @@ function setupTicketClickListener() {
   });
 }
 
+function setupUserClick(currentUser, reservations) {
+  const popup = document.getElementById("userPopup");
+  const userName = document.getElementById("userName");
+  if (!userName) return;
 
-function checkUserLimitReached(ticketInfo, upperLimit, AttendedCount, reservedCount) {
+  userName.addEventListener("click", function (e) {
+    e.stopPropagation();
+    // 予約情報の表示
+    const userReservationList = reservations
+      .map(reservation => {
+        const reservationDate = Object.keys(reservation)[0];
+        const reservationDetail = Object.values(reservation)[0];
+        const usageTypeIcon = reservationDetail.usageType === "月謝" ? `📅` : `🎫`;
+        
+        return `${reservationDate}～  ${usageTypeIcon}`
+      });
+
+    popup.innerHTML = `
+      👤ユーザー情報詳細<br>
+      クラス: ${currentUser.className}<br>
+      予約一覧<br>
+      ${userReservationList}
+    `;
+    popup.style.display = "block";
+  });
+}
+
+function setupUserClickListener() {
+    document.addEventListener("click", function (e) {
+    const popup = document.getElementById("userPopup");
+    const userName = document.getElementById("userName");
+
+    if (!popup || popup.style.display !== "block") return;
+
+    if (
+      popup.style.display === "block" &&
+      !popup.contains(e.target) &&
+      e.target !== userName
+    ) {
+      popup.style.display = "none";
+    }
+  });
+}
+
+function checkUserLimitReached(
+  ticketInfo,
+  upperLimit,
+  AttendedCount,
+  reservedCount
+) {
   // 受講済みで上限到達か
   let userAttendedLimitReached;
   // 予約数と受講数の合計で上限到達か
