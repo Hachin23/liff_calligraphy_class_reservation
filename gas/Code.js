@@ -432,7 +432,7 @@ function makeReservation(params) {
       const checkUpperLimit = targetMonth === reservationMonth ? limitNumberIntThisMonth : limitNumberIntNextMonth;
       if (userMontlyRow) {
         const checkRemainingNumber = remainingNumberTotal;
-        const checkTotalNumber = checkUpperLimit + checkRemainingNumber;
+        const checkTotalNumber = checkRemainingNumber + currentReservations;
         if (currentReservations >= checkTotalNumber) {
           // ユーザーにどの月の上限に達したかを明確に伝える
           const targetMonthDisplay = Utilities.formatDate(targetDate, ssTimezone, 'M月');

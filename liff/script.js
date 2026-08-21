@@ -1209,6 +1209,8 @@ function checkUserLimitReached(
   const hasMonthly = upperLimit > 0;
   const monthlyFinished = AttendedCount === upperLimit;
   const monthlyReservedFinished = AttendedCount + reservedCount === upperLimit;
+  const monthlyAndTicketFinished = ticketEmpty && AttendedCount >= upperLimit;
+  const monthlyAndTicketReservedFinished = ticketEmpty && (AttendedCount + reservedCount) >= upperLimit;
 
     // 登録後の場合
   if (!hasTicket && !hasMonthly) {
@@ -1220,12 +1222,12 @@ function checkUserLimitReached(
     userLimitReached = monthlyReservedFinished;
   } else if (hasTicket && !hasMonthly) {
     // チケット利用のみの場合
-    userAttendedLimitReached = AttendedCount >= 0 && reservedCount === 0 && ticketEmpty;
-    userLimitReached = (AttendedCount >= 0 || reservedCount >= 0) && ticketEmpty;
+    userAttendedLimitReached = reservedCount === 0 && ticketEmpty;
+    userLimitReached = ticketEmpty;
   } else {
     // 月稽古 + チケット利用の場合
-    userAttendedLimitReached = monthlyFinished && (AttendedCount >= 0 && reservedCount == 0 && ticketEmpty);
-    userLimitReached = monthlyReservedFinished && ((AttendedCount >= 0 || reservedCount >= 0) && ticketEmpty);
+    userAttendedLimitReached = monthlyAndTicketFinished && reservedCount === 0;
+    userLimitReached = monthlyAndTicketReservedFinished;
   }
   return { userAttendedLimitReached, userLimitReached };
 }
