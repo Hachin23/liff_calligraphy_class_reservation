@@ -53,13 +53,21 @@
 
 <script>
 
-window.onload = function(){
+window.onload = function() {
   google.script.run
-    .withSuccessHandler(createStudentSelect)
-    .getStudentListForUI();
+    .withSuccessHandler(function(data) {
+      createStudentSelect(data);
 
-  document.getElementById('loader').style.display = 'none';
-  document.getElementById('monthlyForm').style.display = 'block';
+      document.getElementById('loader').style.display = 'none';
+      document.getElementById('monthlyForm').style.display = 'block';
+    })
+    .withFailureHandler(function(error) {
+      console.error(error);
+
+      document.getElementById('loader').style.display = 'none';
+      alert('生徒一覧の取得に失敗しました。');
+    })
+    .getStudentListForUI();
 };
 
 function createStudentSelect(students){
@@ -108,11 +116,7 @@ document.getElementById("saveBtn").addEventListener("click", function(){
   data.nextCount = Number(data.nextCount);
 
   if(!confirm(
-    `生徒名：${data.userName}\n
-    稽古回数（デフォルト）：${data.defaultCount}\n
-    今月の稽古回数：${data.currentCount}\n
-    来月の稽古回数：${data.nextCount}\n
-    この内容で稽古回数を登録しますか？`
+    `生徒名：${data.userName}\n稽古回数（デフォルト）：${data.defaultCount}\n今月の稽古回数：${data.currentCount}\n来月の稽古回数：${data.nextCount}\nこの内容で稽古回数を登録しますか？`
   )) return;
 
   google.script.run
