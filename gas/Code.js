@@ -425,13 +425,15 @@ function makeReservation(params) {
         // 同じ有効期限なら登録順（シートの行番号）
         return a.rowIndex - b.rowIndex;
       });
-      let remainingNumberTotal = validUserTicketsRows.length === 0 ? 0 : validUserTicketsRows.map(ticket => ticket.rowData[USER_TICKETS_COL_REMAINING_NUM]).reduce((total, num) => total + num, 0);
+
+      
+      let availableRemainingNumberTotal = validUserTicketsRows.length === 0 ? 0 : validUserTicketsRows.map(ticket => ticket.rowData[USER_TICKETS_COL_REMAINING_NUM]).reduce((total, num) => total + num, 0);
       // 消費するチケットを特定（条件：残数が1以上のチケットを消費）
       let targetTicket = validUserTicketsRows.find(ticket => ticket.rowData[USER_TICKETS_COL_REMAINING_NUM] > 0);
 
       const checkUpperLimit = targetMonth === reservationMonth ? limitNumberIntThisMonth : limitNumberIntNextMonth;
       if (userMontlyRow) {
-        const checkRemainingNumber = remainingNumberTotal;
+        const checkRemainingNumber = availableRemainingNumberTotal;
         const checkTotalNumber = checkRemainingNumber + currentReservations;
         if (currentReservations >= checkTotalNumber) {
           // ユーザーにどの月の上限に達したかを明確に伝える
@@ -517,7 +519,7 @@ function makeReservation(params) {
             message: '利用可能なチケットがありません。'
           };
         }
-        remainingNumberTotal--;
+        // remainingNumberTotal--;
         targetTicket.rowData[USER_TICKETS_COL_REMAINING_NUM]--;
         const newRemainingNum = targetTicket.rowData[USER_TICKETS_COL_REMAINING_NUM];
         userTicketsSheet.getRange(targetTicket.rowIndex + 1, USER_TICKETS_COL_REMAINING_NUM + 1).setValue(newRemainingNum);
@@ -583,7 +585,9 @@ function makeReservation(params) {
           }
           // 同じ有効期限なら登録順（シートの行番号）
           return ticket1[USER_TICKETS_COL_REGISTER_DATE] - ticket2[USER_TICKETS_COL_REGISTER_DATE];
-      });
+        });
+      
+      let remainingNumberTotal = availableUserTickets.length === 0 ? 0 : availableUserTickets.map(ticket => ticket[USER_TICKETS_COL_REMAINING_NUM]).reduce((total, num) => total + num, 0);
 
       const userInfoFull = {
         data: {
