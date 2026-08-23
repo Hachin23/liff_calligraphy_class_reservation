@@ -138,15 +138,42 @@ function getUserInfoFromSheet(userId) {
     userId: userTicketsHeader.indexOf("ユーザID"),
     remainingNumber: userTicketsHeader.indexOf("残数"),
     expirationDate: userTicketsHeader.indexOf("有効期限"),
-    purchaseNumber: userTicketsHeader.indexOf("購入数")
+    purchaseNumber: userTicketsHeader.indexOf("購入数"),
+    ticketStatus: userTicketsHeader.indexOf("ステータス"),
   };
   
   // ユーザーのチケット情報を検索
   const dateStringNow = Utilities.formatDate(new Date(), SPREADSHEET.getSpreadsheetTimeZone(), 'yyyy-MM-dd');
-  let userTicketsRows = userTicketsData.slice(1).filter(row => row[userTicketsCol.userId] === userId)
+  let userTicketsRows = userTicketsData
+    .slice(1)
+    .map((rowData, index) => ({
+      rowData,
+      rowIndex: index + 2
+    }))
+    .filter(row =>
+      row.rowData[userTicketsCol.userId] === userId
+  );
+  
   // 有効期限が残っているものだけ取得
-  let validUserTicketsRows = userTicketsRows.filter(row => Utilities.formatDate(row[userTicketsCol.expirationDate], SPREADSHEET.getSpreadsheetTimeZone(), 'yyyy-MM-dd') > dateStringNow)
-  let remainingNumberTotal = validUserTicketsRows.length === 0 ? 0 : validUserTicketsRows.map(row => row[userTicketsCol.remainingNumber]).reduce((total, num) => total + num, 0);
+  let validUserTicketsRows = userTicketsRows
+    .filter(row =>
+      Utilities.formatDate(
+        row.rowData[userTicketsCol.expirationDate], SPREADSHEET.getSpreadsheetTimeZone(), 'yyyy-MM-dd') >= dateStringNow &&
+      row.rowData[userTicketsCol.ticketStatus] === "有効"
+    ).sort((a, b) => {
+      // 有効期限が近い順
+      const expireDiff =
+        a.rowData[userTicketsCol.expirationDate] -
+        b.rowData[userTicketsCol.expirationDate];
+
+      if (expireDiff !== 0) {
+        return expireDiff;
+      }
+      // 同じ有効期限なら登録順（シートの行番号）
+      return a.rowIndex - b.rowIndex;
+    });
+  
+  let remainingNumberTotal = validUserTicketsRows.length === 0 ? 0 : validUserTicketsRows.map(row => row.rowData[userTicketsCol.remainingNumber]).reduce((total, num) => total + num, 0);
 
   // Workersへ送るためのデータ構造を作成
   return {
@@ -161,9 +188,9 @@ function getUserInfoFromSheet(userId) {
     ticketInfo: {
       dispInfo: validUserTicketsRows.map(row => {
         const obj = {};
-        obj.remainingNumber = row[userTicketsCol.remainingNumber];
-        obj.expirationDate = Utilities.formatDate(row[userTicketsCol.expirationDate], SPREADSHEET.getSpreadsheetTimeZone(), 'yyyy-MM-dd');
-        obj.purchaseNumber = row[userTicketsCol.purchaseNumber];
+        obj.remainingNumber = row.rowData[userTicketsCol.remainingNumber];
+        obj.expirationDate = Utilities.formatDate(row.rowData[userTicketsCol.expirationDate], SPREADSHEET.getSpreadsheetTimeZone(), 'yyyy-MM-dd');
+        obj.purchaseNumber = row.rowData[userTicketsCol.purchaseNumber];
         return obj;
       }),
       remainingNumberTotal: remainingNumberTotal,

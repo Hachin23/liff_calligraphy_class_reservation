@@ -565,6 +565,26 @@ function makeReservation(params) {
       deleteReservationsCache(userId, targetYearMonth);
 
       const reservations = getAllReservationsForUser(userId);
+      const dateNowStr = Utilities.formatDate(now, ssTimezone, 'yyyy-MM-dd');
+      const availableUserTickets = userTicketsRows.slice(1)
+        .filter(row =>
+          row[USER_TICKETS_COL_USER_ID] === userId &&
+          Utilities.formatDate(row[USER_TICKETS_COL_EXPIRE_DATE], ssTimezone, 'yyyy-MM-dd') >= dateNowStr &&
+          row[USER_TICKETS_COL_STATUS] === "有効"
+       )
+        .sort((ticket1, ticket2) => {
+          // 有効期限が近い順
+          const expireDiff =
+          ticket1[USER_TICKETS_COL_EXPIRE_DATE] -
+          ticket2[USER_TICKETS_COL_EXPIRE_DATE];
+
+          if (expireDiff !== 0) {
+            return expireDiff;
+          }
+          // 同じ有効期限なら登録順（シートの行番号）
+          return ticket1[USER_TICKETS_COL_REGISTER_DATE] - ticket2[USER_TICKETS_COL_REGISTER_DATE];
+      });
+
       const userInfoFull = {
         data: {
           userId: userId,
@@ -573,11 +593,12 @@ function makeReservation(params) {
           upperLimitNumber: userLimit,
           upperLimitNumberThisMonth: limitNumberIntThisMonth,
           upperLimitNumberNextMonth: limitNumberIntNextMonth,
+          // ここで返却するチケットは「今日」の時点で有効期限があるチケット
           ticketInfo: {
-            dispInfo: validUserTicketsRows.map(ticket => ({
-              remainingNumber: ticket.rowData[USER_TICKETS_COL_REMAINING_NUM],
-              expirationDate: Utilities.formatDate(ticket.rowData[USER_TICKETS_COL_EXPIRE_DATE], ssTimezone, 'yyyy-MM-dd'),
-              purchaseNumber: ticket.rowData[USER_TICKETS_COL_PURCHASE_NUM]
+            dispInfo: availableUserTickets.map(ticket => ({
+              remainingNumber: ticket[USER_TICKETS_COL_REMAINING_NUM],
+              expirationDate: Utilities.formatDate(ticket[USER_TICKETS_COL_EXPIRE_DATE], ssTimezone, 'yyyy-MM-dd'),
+              purchaseNumber: ticket[USER_TICKETS_COL_PURCHASE_NUM]
             })),
             remainingNumberTotal: remainingNumberTotal,
             // チケット購入履歴があるか
@@ -920,10 +941,12 @@ function handleCancelReservation(params) {
       }
       
       const reservations = getAllReservationsForUser(userId);
+      const dateNowStr = Utilities.formatDate(now, ssTimezone, 'yyyy-MM-dd');
       const availableUserTickets = userTicketsRows.slice(1)
         .filter(row =>
           row[USER_TICKETS_COL_USER_ID] === userId &&
-          Utilities.formatDate(row[USER_TICKETS_COL_EXPIRE_DATE], ssTimezone, 'yyyy-MM-dd') >= dateStr
+          Utilities.formatDate(row[USER_TICKETS_COL_EXPIRE_DATE], ssTimezone, 'yyyy-MM-dd') >= dateNowStr &&
+          row[USER_TICKETS_COL_STATUS] === "有効"
        )
         .sort((ticket1, ticket2) => {
           // 有効期限が近い順
@@ -947,10 +970,10 @@ function handleCancelReservation(params) {
           upperLimitNumberThisMonth: limitNumberIntThisMonth,
           upperLimitNumberNextMonth: limitNumberIntNextMonth,
           ticketInfo: {
-            dispInfo: availableUserTickets.map(row => ({
-              remainingNumber: row[USER_TICKETS_COL_REMAINING_NUM],
-              expirationDate: Utilities.formatDate(row[USER_TICKETS_COL_EXPIRE_DATE], ssTimezone, 'yyyy-MM-dd'),
-              purchaseNumber: row[USER_TICKETS_COL_PURCHASE_NUM]
+            dispInfo: availableUserTickets.map(ticket => ({
+              remainingNumber: ticket[USER_TICKETS_COL_REMAINING_NUM],
+              expirationDate: Utilities.formatDate(ticket[USER_TICKETS_COL_EXPIRE_DATE], ssTimezone, 'yyyy-MM-dd'),
+              purchaseNumber: ticket[USER_TICKETS_COL_PURCHASE_NUM]
             })),
             remainingNumberTotal: remainingNumberTotal,
             // チケット購入履歴があるか
