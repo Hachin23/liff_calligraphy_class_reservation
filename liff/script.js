@@ -1089,7 +1089,7 @@ function setupTicketClick(ticketInfo) {
 
     ticketPopup.innerHTML = `
       🎫 チケット<br>
-      ${ticketDetail}
+      ${ticketDetail ? ticketDetail : '利用可能なチケットはありません'}
     `;
     ticketPopup.style.display = "block";
   });
