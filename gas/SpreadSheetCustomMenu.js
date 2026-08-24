@@ -972,6 +972,15 @@ function monthlyMaintenance(event) {
       if (nextReservations.length < newNextCount) {
         const convertCount = newNextCount - nextReservations.length;
         const monthlyData = getMonthlyTicketReservations(reservationsSheet, userTicketSheet, userId);
+        
+        Logger.log({
+          userId: userId,
+          month: "thisMonth",
+          newCurrentCount: newCurrentCount,
+          currentReservationsLength: currentReservations.length,
+          currentReservations: currentReservations,
+          convertCount: convertCount
+        });
 
         convertTicketReservationsToMonthly(
           reservationsSheet,
@@ -985,15 +994,13 @@ function monthlyMaintenance(event) {
 
         Logger.log({
           userId: userId,
-          newCurrentCount: newCurrentCount,
-          currentReservationsLength: currentReservations.length,
-          currentReservations: currentReservations,
-          convertCount:
-            currentReservations.length > newCurrentCount
-              ? currentReservations.length - newCurrentCount
-              : 0
+          month: "nextMonth",
+          newNextCount: newNextCount,
+          nextReservationsLength: nextReservations.length,
+          nextReservations: nextReservations,
+          convertCount: convertCount
         });
-
+        
         convertMonthlyReservationsToTicket(
           reservationsSheet,
           userTicketSheet,
