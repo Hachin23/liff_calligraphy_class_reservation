@@ -405,7 +405,7 @@ function renderReservationCalendar(date, status, capacityData = {}, myReservatio
           const keys = Object.keys(dateTimeObj);
           return keys.some(key => key.includes(monthString));
         }).length;
-  const { userAttendedLimitReached, userLimitReached } = checkUserLimitReached(currentUser.ticketInfo, upperLimit, AttendedCount, reservedCount);
+  const { userAttendedLimitReached, userLimitReached } = checkUserLimitReached(currentUser.ticketInfo, upperLimit, AttendedCount, reservedCount, monthString);
 
   // ⭐ 日付セルを作成
   for (let day = 1; day <= lastDayOfMonth.getDate(); day++) {
@@ -570,7 +570,7 @@ function renderAvailableClassesList(classes, dateString, monthKey) {
   const monthReservation = MY_RESERVIONS[monthKey]?.data || [];
   const reservedCount = monthReservation.length;
   const AttendedCount = MY_ATTENDED_DATES.data.filter(item => item.includes(monthKey)).length;
-  const { userLimitReached } = checkUserLimitReached(currentUser.ticketInfo, upperLimit, AttendedCount, reservedCount);
+  const { userLimitReached } = checkUserLimitReached(currentUser.ticketInfo, upperLimit, AttendedCount, reservedCount, monthKey);
 
   classes.forEach(item => {
     // MY_RESERVIONSから取得して、予約済み時間を特定
@@ -1198,7 +1198,8 @@ function checkUserLimitReached(
   ticketInfo,
   upperLimit,
   AttendedCount,
-  reservedCount
+  reservedCount,
+  monthKey
 ) {
   // 受講済みで上限到達か
   let userAttendedLimitReached;
@@ -1218,8 +1219,8 @@ function checkUserLimitReached(
     // 有効期限が遠い順
     ticket2.expirationDate - ticket1.expirationDate
     )[0];
-  targetTicketExpire = targetTicketInfo?.expirationDate;
-  const monthlyAndTicketFinished = (ticketEmpty || !targetTicketExpire) && AttendedCount >= upperLimit;
+  targetTicketExpire = targetTicketInfo?.expirationDate ? Utilities.formatDate(targetTicketInfo.expirationDate, SPREADSHEET.getSpreadsheetTimeZone(), 'yyyy-MM') : null;
+  const monthlyAndTicketFinished = (ticketEmpty || (targetTicketExpire && monthKey > targetTicketExpire)) && AttendedCount >= upperLimit;
   const monthlyAndTicketReservedFinished = (ticketEmpty || !targetTicketExpire) && (AttendedCount + reservedCount) >= upperLimit;
 
     // 登録後の場合
