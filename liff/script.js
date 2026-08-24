@@ -1221,7 +1221,7 @@ function checkUserLimitReached(
     )[0];
   targetTicketExpire = targetTicketInfo?.expirationDate ? targetTicketInfo.expirationDate.substring(0, 7) : null;
   const monthlyAndTicketFinished = (ticketEmpty || (targetTicketExpire && monthKey > targetTicketExpire)) && AttendedCount >= upperLimit;
-  const monthlyAndTicketReservedFinished = (ticketEmpty || !targetTicketExpire) && (AttendedCount + reservedCount) >= upperLimit;
+  const monthlyAndTicketReservedFinished = (ticketEmpty || (targetTicketExpire && monthKey > targetTicketExpire)) && (AttendedCount + reservedCount) >= upperLimit;
 
     // 登録後の場合
   if (!hasTicket && !hasMonthly) {
