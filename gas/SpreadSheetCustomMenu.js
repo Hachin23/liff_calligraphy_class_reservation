@@ -983,6 +983,17 @@ function monthlyMaintenance(event) {
       } else if (nextReservations.length > newNextCount) {
         const convertCount = nextReservations.length - newNextCount;
 
+        Logger.log({
+          userId: userId,
+          newCurrentCount: newCurrentCount,
+          currentReservationsLength: currentReservations.length,
+          currentReservations: currentReservations,
+          convertCount:
+            currentReservations.length > newCurrentCount
+              ? currentReservations.length - newCurrentCount
+              : 0
+        });
+
         convertMonthlyReservationsToTicket(
           reservationsSheet,
           userTicketSheet,
