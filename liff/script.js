@@ -649,6 +649,7 @@ function renderAvailableClassesList(classes, dateString, monthKey) {
         `;
       }
     } else {
+      // TODO: ここで「利用可能なチケットなし」も表示したい
       let reason = isFull ? '満席' : `稽古予約回数の上限到達`;
          noButtonHtml = `
             <span class="status-text is-unavailable">${item.startTime} - ${item.endTime}</span>
@@ -1203,14 +1204,23 @@ function checkUserLimitReached(
   let userAttendedLimitReached;
   // 予約数と受講数の合計で上限到達か
   let userLimitReached;
+  // チケットの有効期限（有効期限が一番遠いチケット、形式：yyyy-MM-dd）
+  let targetTicketExpire;
 
   const hasTicket = ticketInfo.purchaseHistory;
   const ticketEmpty = ticketInfo.remainingNumberTotal === 0;
   const hasMonthly = upperLimit > 0;
   const monthlyFinished = AttendedCount === upperLimit;
   const monthlyReservedFinished = AttendedCount + reservedCount === upperLimit;
-  const monthlyAndTicketFinished = ticketEmpty && AttendedCount >= upperLimit;
-  const monthlyAndTicketReservedFinished = ticketEmpty && (AttendedCount + reservedCount) >= upperLimit;
+  // 表示しているカレンダーの月の有効期限
+  const targetTicketInfo = [...ticketInfo.dispInfo]
+    .sort((ticket1, ticket2) =>
+    // 有効期限が遠い順
+    ticket2.expirationDate - ticket1.expirationDate
+    )[0];
+  targetTicketExpire = targetTicketInfo?.expirationDate;
+  const monthlyAndTicketFinished = (ticketEmpty || !targetTicketExpire) && AttendedCount >= upperLimit;
+  const monthlyAndTicketReservedFinished = (ticketEmpty || !targetTicketExpire) && (AttendedCount + reservedCount) >= upperLimit;
 
     // 登録後の場合
   if (!hasTicket && !hasMonthly) {
@@ -1229,5 +1239,5 @@ function checkUserLimitReached(
     userAttendedLimitReached = monthlyAndTicketFinished && reservedCount === 0;
     userLimitReached = monthlyAndTicketReservedFinished;
   }
-  return { userAttendedLimitReached, userLimitReached };
+  return { userAttendedLimitReached, userLimitReached, targetTicketExpire };
 }
