@@ -876,7 +876,7 @@ function monthlyMaintenance(event) {
   // トリガー実行の時のみ実行（手動実行時はスルー）
   if (event) {
     // ===========================================
-    // 稽古回数のスライド処理実行
+    // 今月の稽古回数のスライド処理実行
     // ===========================================
     const userMonthlySubscriptionsSheet = SPREADSHEET.getSheetByName(SHEET_NAME_USER_MONTHLY_SUBSCRIPTIONS);
     const reservationsSheet = SPREADSHEET.getSheetByName(SHEET_NAME_RESERVATIONS);
@@ -910,7 +910,7 @@ function monthlyMaintenance(event) {
       // ===========================================
       // 現在のチケット予約を一旦解除
       // ===========================================
-      // 今月・来月をまたいでチケットを再配置するため、
+      // 今月の稽古回数を調整するため、
       // 最初に既存のチケット予約をすべて解除する。
       const ticketReservationData = getTicketReservations(
         reservationsSheet,
@@ -964,53 +964,7 @@ function monthlyMaintenance(event) {
       }
 
       // ===========================================
-      // 来月の月謝枠を調整
-      // ===========================================
-      monthlyReservations = getMonthlyLessonReservations(reservationsSheet, userId);
-      const nextReservations = monthlyReservations.nextMonth;
-
-      if (nextReservations.length < newNextCount) {
-        const convertCount = newNextCount - nextReservations.length;
-        const monthlyData = getMonthlyTicketReservations(reservationsSheet, userTicketSheet, userId);
-        
-        Logger.log({
-          userId: userId,
-          month: "thisMonth",
-          newCurrentCount: newCurrentCount,
-          currentReservationsLength: currentReservations.length,
-          currentReservations: currentReservations,
-          convertCount: convertCount
-        });
-
-        convertTicketReservationsToMonthly(
-          reservationsSheet,
-          userTicketSheet,
-          monthlyData.nextMonth,
-          convertCount
-        );
-
-      } else if (nextReservations.length > newNextCount) {
-        const convertCount = nextReservations.length - newNextCount;
-
-        Logger.log({
-          userId: userId,
-          month: "nextMonth",
-          newNextCount: newNextCount,
-          nextReservationsLength: nextReservations.length,
-          nextReservations: nextReservations,
-          convertCount: convertCount
-        });
-        
-        convertMonthlyReservationsToTicket(
-          reservationsSheet,
-          userTicketSheet,
-          userId,
-          nextReservations,
-          convertCount
-        );
-      }
-      // ===========================================
-      // 今月・来月のチケット予約を再配置
+      // 今月チケット予約を再配置
       // ===========================================
       const updatedTicketReservationData =
         getTicketReservations(
