@@ -1044,7 +1044,7 @@ function updateClassInfoUI(currentUser, monthKey) {
     ? currentUser.upperLimitNumberThisMonth
     : currentUser.upperLimitNumberNextMonth;
  
-  const monthlySubscription = currentUser.upperLimitNumber === 0
+  const monthlySubscription = upperLimitLabel === 0
     ? ""
     : `🗓️ 月${upperLimitLabel}回`;
   
