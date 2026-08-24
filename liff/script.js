@@ -1219,7 +1219,7 @@ function checkUserLimitReached(
     // 有効期限が遠い順
     ticket2.expirationDate - ticket1.expirationDate
     )[0];
-  targetTicketExpire = targetTicketInfo?.expirationDate ? Utilities.formatDate(targetTicketInfo.expirationDate, SPREADSHEET.getSpreadsheetTimeZone(), 'yyyy-MM') : null;
+  targetTicketExpire = targetTicketInfo?.expirationDate ? targetTicketInfo.expirationDate.substring(0, 7) : null;
   const monthlyAndTicketFinished = (ticketEmpty || (targetTicketExpire && monthKey > targetTicketExpire)) && AttendedCount >= upperLimit;
   const monthlyAndTicketReservedFinished = (ticketEmpty || !targetTicketExpire) && (AttendedCount + reservedCount) >= upperLimit;
 
