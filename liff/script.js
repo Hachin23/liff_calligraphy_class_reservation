@@ -1152,7 +1152,7 @@ function setupUserClick(currentUser, reservations) {
         .map(({ reservationDate, reservationDetail }) => {
           
           const reservationDay = reservationDate.slice(5, 10);
-          const monthKeyDay = new Date(reservationDay);
+          const monthKeyDay = new Date(reservationDate.slice(0, 10));
           const week = ['日', '月', '火', '水', '木', '金', '土'];
 
           const reservationStartTime = reservationDate.slice(12, 16);
