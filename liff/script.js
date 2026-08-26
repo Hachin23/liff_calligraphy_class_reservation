@@ -1176,8 +1176,8 @@ function setupUserClick(currentUser, reservations) {
 
     userPopup.innerHTML = `
       👤ユーザー詳細<br>
-      クラス: ${currentUser.className}<br><br>
-      予約一覧<br>
+      🖌️クラス: ${currentUser.className}<br><br>
+      📑予約一覧<br>
       ${userReservationList}
     `;
     userPopup.style.display = "block";
