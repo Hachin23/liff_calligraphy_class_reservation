@@ -1150,11 +1150,17 @@ function setupUserClick(currentUser, reservations) {
 
       const reservationList = monthReservations
         .map(({ reservationDate, reservationDetail }) => {
+          
+          const reservationDay = reservationDate.slice(5, 10);
+          const monthKeyDay = new Date(reservationDay);
+          const week = ['日', '月', '火', '水', '木', '金', '土'];
+
+          const reservationStartTime = reservationDate.slice(12, 16);
           const usageTypeIcon =
             reservationDetail.usageType === "月謝" ? "🗓️" : "🎫";
 
           return `
-            <div>${reservationDate} ${usageTypeIcon}</div>
+            <div>${usageTypeIcon} ${reservationDay}（${week[monthKeyDay.getDay()]}） ${reservationStartTime}～</div>
           `;
         })
         .join("");
