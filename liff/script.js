@@ -1088,7 +1088,7 @@ function setupTicketClick(ticketInfo) {
     .join("<hr>");
 
     ticketPopup.innerHTML = `
-      🎫 チケット<br>
+      🎫 保有チケット一覧<br>
       ${ticketDetail ? ticketDetail : '利用可能なチケットはありません'}
     `;
     ticketPopup.style.display = "block";
