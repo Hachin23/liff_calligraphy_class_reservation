@@ -32,41 +32,56 @@ const RETRY_COL_FINAL_EXECUTE_DATE = 7;
  * 時間主導トリガーから呼び出す再送処理
  */
 function retryProcess() {
-  // スプレッドシート読み込み
-  const retrySheet = SPREADSHEET.getSheetByName(SHEET_NAME_RETRY);
-  const retrySheetDataWithIndex = retrySheet.getDataRange().getValues().map((row, index) => ({
-    rowIndex: index,
-    rowData: row
-  }))
-  .filter(retry => retry.rowIndex > 0)
-  .filter(retry => retry.rowData[RETRY_COL_RETRY_COUNT] < RETRY_LIMIT)
-  .filter(retry => retry.rowData[RETRY_COL_STATUS] === RETRY_STATUS.WAITING);
 
-  // 対象の再送処理がない場合は、終了
-  if (retrySheetDataWithIndex.length === 0) {
-    return;
-  }
+  const lock = LockService.getScriptLock();
+  let locked = false;
+  
+  try {
+    lock.waitLock(5000);
+    locked = true;
 
-  retrySheetDataWithIndex.forEach(retry => {
-    const processType = retry.rowData[RETRY_COL_PROCESS_TYPE];
-    const args =  JSON.parse(retry.rowData[RETRY_COL_ARGS]);
+    // スプレッドシート読み込み
+    const retrySheet = SPREADSHEET.getSheetByName(SHEET_NAME_RETRY);
+    const retrySheetDataWithIndex = retrySheet.getDataRange().getValues().map((row, index) => ({
+      rowIndex: index,
+      rowData: row
+    }))
+    .filter(retry => retry.rowIndex > 0)
+    .filter(retry => retry.rowData[RETRY_COL_RETRY_COUNT] < RETRY_LIMIT)
+    .filter(retry => retry.rowData[RETRY_COL_STATUS] === RETRY_STATUS.WAITING);
 
-    // 処理分岐
-    let result = "";
-    switch (processType) {
-      case PROCESS_TYPE.SYNC_WORKERS:
-        result = retrySyncWorkers(args.userId);
-        break;
-      default:
-        result = {
-          success: false,
-          error: `未対応の処理種別です: ${processType}`
-        };
+    // 対象の再送処理がない場合は、終了
+    if (retrySheetDataWithIndex.length === 0) {
+      return;
     }
 
-    updateRetryStatus(retrySheet, retry, result.success, result.error);
+    retrySheetDataWithIndex.forEach(retry => {
+      const processType = retry.rowData[RETRY_COL_PROCESS_TYPE];
+      const args =  JSON.parse(retry.rowData[RETRY_COL_ARGS]);
 
-  });
+      // 処理分岐
+      let result = "";
+      switch (processType) {
+        case PROCESS_TYPE.SYNC_WORKERS:
+          result = retrySyncWorkers(args.userId);
+          break;
+        default:
+          result = {
+            success: false,
+            error: `未対応の処理種別です: ${processType}`
+          };
+      }
+      updateRetryStatus(retrySheet, retry, result.success, result.error);
+    });
+  
+  } catch(e) {
+    console.log(`リトライ処理を実行できませんでした: ${e.message}`);
+    return;
+  } finally {
+    if (locked) {
+      lock.releaseLock();
+    }
+  }
 }
 
 /**
@@ -77,8 +92,15 @@ function retrySyncWorkers(userId) {
   try {
     const userData = getUserInfoFromSheet(userId);
     const capacityData = getCapacityData();
+    const reservations = getAllReservationsForUser(userId);
 
-    syncReservationToWorkers(userId, userData, capacityData);
+    const fullData = {
+      data: userData,
+      myReservedDates: reservations.myReservedDates,
+      myAttendedDates: reservations.myAttendedDates
+    };
+
+    syncReservationToWorkers(userId, fullData, capacityData);
 
     return {
       success: true
