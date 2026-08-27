@@ -1095,7 +1095,7 @@ function setupTicketClick(ticketInfo) {
     userPopup.style.display = "none";
     const ticketDetail = ticketInfo.dispInfo
       .map(ticket => `
-      残数：${ticket.remainingNumber} / ${ticket.purchaseNumber}回券<br>
+      ${ticket.purchaseNumber}回券  残数：${ticket.remainingNumber} / ${ticket.purchaseNumber}回<br>
       有効期限：${ticket.expirationDate}
     `)
     .join("<hr>");
