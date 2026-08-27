@@ -111,6 +111,11 @@ async function fetchInitialAppData() {
 
   FIRST_DAY_OF_THE_WEEK = json.config.CALENDAR_INFO.FIRST_DAY_OF_WEEK;
 
+  if (json.config.maintenancemode === "ON") {
+    showMaintenanceScreen();
+    return;
+  }
+
   // --- 分岐点：Workersにユーザー情報があるか ---
   if (json.userInfo && json.userInfo.data) {
     // 【既存ユーザー】
@@ -1247,4 +1252,9 @@ function checkUserLimitReached(
     userLimitReached = monthlyAndTicketReservedFinished;
   }
   return { userAttendedLimitReached, userLimitReached, targetTicketExpire };
+}
+
+function showMaintenanceScreen() {
+  document.getElementById("main").classList.add("hidden");
+  document.getElementById("maintenance").classList.remove("hidden");
 }

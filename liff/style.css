@@ -838,3 +838,33 @@ select:focus {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
 }
+
+/* ==================================== */
+/* メンテナンス画面
+/* ==================================== */
+#maintenance {
+  min-height: 100vh;
+  box-sizing: border-box;
+  padding: 40px 20px;
+}
+
+.maintenance-container {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 40px 20px;
+  text-align: center;
+}
+
+.maintenance-icon {
+  font-size: 48px;
+  margin-bottom: 20px;
+}
+
+.maintenance-container h2 {
+  margin-bottom: 20px;
+}
+
+.maintenance-container p {
+  line-height: 1.8;
+  color: #666;
+}
