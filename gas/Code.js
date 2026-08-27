@@ -42,7 +42,8 @@ const NUMBER_TO_DAY_NAME = ['日', '月', '火', '水', '木', '金', '土']; //
 
 const RESERVATION_STATUS = {
   CONFIRMED: "確定",
-  CANCELED: "キャンセル"
+  CANCELED: "キャンセル",
+  ATTENDED: "受講済み"
 };
 
 // reservationシート 列インデックス定数
@@ -784,6 +785,8 @@ function handleCancelReservation(params) {
           && Utilities.formatDate(ticket.rowData[USER_TICKETS_COL_EXPIRE_DATE], SPREADSHEET.getSpreadsheetTimeZone(), 'yyyy-MM-dd') >= dateStr
           // 一度も消費されていないチケットは対象外
           && ticket.rowData[USER_TICKETS_COL_PURCHASE_NUM] !== ticket.rowData[USER_TICKETS_COL_REMAINING_NUM]
+          // 消費済みのチケットは対象外
+          && (allowAttendedCancel || ticket.rowData[USER_TICKETS_COL_STATUS] !== "消費済み")
       ).sort((ticket1, ticket2) => {
         // 有効期限が近い順
         const expireDiff =
@@ -834,7 +837,7 @@ function handleCancelReservation(params) {
         return time2.localeCompare(time1);
         });
 
-        if (reservations.length === 0) {
+        if (!allowAttendedCancel && reservations.length === 0) {
           throw new Error(`チケットに紐づく予約が見つかりません。ticketId: ${ticketId}`);
         }
 

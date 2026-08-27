@@ -3,7 +3,7 @@
 <head>
 <base target="_top">
 <style>
-  body { font-family: 'Helvetica Neue', Arial, sans-serif; padding: 15px; color: #333; line-height: 1.4; }
+  body { font-family: 'Helvetica Neue', Arial, sans-serif; padding: 10px; color: #333; line-height: 1.4; }
   h3 { border-bottom: 2px solid #4285f4; padding-bottom: 5px; color: #4285f4; }
   label { font-weight: bold; display: block; margin-top: 15px; font-size: 0.9rem; }
   input, select { 
@@ -178,7 +178,7 @@
             opt.dataset.className = reservation.className;
 
             opt.textContent =
-              `${reservation.date} ${reservation.startTime}～ (${reservation.className})`;
+              `${reservation.date} ${reservation.startTime}～ (${reservation.status})`;
 
             lSelect.appendChild(opt);
           });

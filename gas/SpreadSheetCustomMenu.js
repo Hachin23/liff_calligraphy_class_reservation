@@ -205,17 +205,21 @@ function adminProxyCancel(userId, reservationId, attendedCancel) {
 /**
  * 指定したユーザーの予約情報を取得
  */
-function getUserReservations(userId) {
+function getUserReservations(userId, attendedCancel) {
   const reservationSheet = SPREADSHEET.getSheetByName(SHEET_NAME_RESERVATIONS);
   const userReservationData = reservationSheet.getDataRange().getValues().
-    filter(reservation => reservation[RES_COL_USER_ID] === userId && reservation[RES_COL_STATUS] === RESERVATION_STATUS.CONFIRMED);
+    filter(reservation => 
+      reservation[RES_COL_USER_ID] === userId && 
+      (reservation[RES_COL_STATUS] === RESERVATION_STATUS.CONFIRMED || (attendedCancel && reservation[RES_COL_STATUS] === RESERVATION_STATUS.ATTENDED))
+    );
   // 管理画面表示用の予約情報を返す
   const result = userReservationData.map(reservation => (
     {
       reservationId: reservation[RES_COL_RESERVATION_ID],
       date: Utilities.formatDate(reservation[RES_COL_DATE], SPREADSHEET.getSpreadsheetTimeZone(), 'yyyy-MM-dd'),
       startTime: Utilities.formatDate(reservation[RES_COL_START_TIME], SPREADSHEET.getSpreadsheetTimeZone(), 'HH:mm'),
-      className: reservation[RES_COL_SELECTED_CLASS_NAME]
+      className: reservation[RES_COL_SELECTED_CLASS_NAME],
+      status: reservation[RES_COL_STATUS] === "受講済み" ? reservation[RES_COL_STATUS] : "予約中"
     }));
   Logger.log(result);
   return result;
