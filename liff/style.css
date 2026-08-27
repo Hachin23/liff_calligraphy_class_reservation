@@ -469,8 +469,8 @@ select:focus {
   z-index: -1;
   
   /* --- 円を親要素（.date-number）のど真ん中に配置する魔法の呪文 --- */
-  top: 53%;
-  left: 20%;
+  top: 56%;
+  left: 72%;
   transform: translate(-50%, -50%); /* 自身のサイズの半分だけ戻す */
   
   /* --- 円のサイズと形の設定 --- */
@@ -645,10 +645,7 @@ select:focus {
 /* 日付の数字を囲むspan（JSで追加） */
 .calendar-cell .date-number {
     display: block; /* 日付を独立させ、右寄せを維持 */
-    /* position: relative; */
-    position: absolute;
-    top: 6px;     /* 上下位置 */
-    right: 16px;
+    position: relative;
     z-index: 1;
 }
 
