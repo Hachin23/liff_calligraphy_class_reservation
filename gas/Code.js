@@ -1020,13 +1020,21 @@ function handleCancelReservation(params) {
       }
 
       if (admin) {
-        sendLineMessage(userId,
+        try {
+              sendLineMessage(userId,
 `教室側で下記のご予約をキャンセルいたしました。
 
 ・予約日時：${dateStr} ${startTimeStr}～
 
 ご確認のほど、よろしくお願いいたします。`
         );
+        } catch(e) {
+          logWarn({
+            type: "LINE通知エラー(ユーザー)",
+            targetUserId: userId,
+            message: e.message
+          });
+        }
       }
 
       return { 
