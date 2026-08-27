@@ -6,15 +6,16 @@ function saveSystemLog(log) {
     log.level,
     log.type,
     log.targetUserId,
-    log.message
+    log.message,
+    log.detailInfo ?? ""
   ]);
 }
 
 function logWarn(log) {
-  saveSystemLog(
+  saveSystemLog({
     ...log, 
-    "WARN"
-  );
+    level: "WARN"
+  });
 }
 
 function logError(log) {

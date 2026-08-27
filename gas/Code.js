@@ -1131,6 +1131,7 @@ function cancelTicketConsumption(
     'yyyy-MM-dd'
   );
 
+  const slideDetails = [];
   // ============================================================
   // 後続チケットを順番に確認
   // ============================================================
@@ -1205,13 +1206,12 @@ function cancelTicketConsumption(
         ]
       );
 
-    Logger.log(
-      `チケットをスライドしました。` +
-      ` targetTicketId=${currentTargetTicket.rowData[USER_TICKETS_COL_TICKET_ID]},` +
-      ` sourceTicketId=${sourceTicket.rowData[USER_TICKETS_COL_TICKET_ID]},` +
-      ` reservationDate=${reservationDateStr},` +
-      ` targetTicketExpireDate=${currentTargetExpireDateStr}`
-    );
+    slideDetails.push({
+      reservationRow: slideReservation.rowIndex + 1,
+      reservationDate: reservationDateStr,
+      fromTicketId: sourceTicket.rowData[USER_TICKETS_COL_TICKET_ID],
+      toTicketId: currentTargetTicket.rowData[USER_TICKETS_COL_TICKET_ID]
+    });
 
     // ==========================================================
     // 今回予約を移動した「元チケット」が、
@@ -1283,6 +1283,17 @@ function cancelTicketConsumption(
     );
 
   }
+
+  logInfo({
+    type: "TICKET_CONSUMPTION_CANCEL",
+    targetUserId: currentTargetTicketData.ticket.rowData[USER_TICKETS_COL_USER_ID],
+    message: "チケット消費分のキャンセル処理を実行しました。",
+    detailInfo: JSON.stringify({
+      slideDetails: slideDetails,
+      finalIncrementTicketId: finalTicketId,
+      finalIncrementSkipped: finalTicketId === skipFinalIncrementTicketId
+    })
+  });
 
 }
 
