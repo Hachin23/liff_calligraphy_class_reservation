@@ -33,6 +33,11 @@ const RETRY_COL_FINAL_EXECUTE_DATE = 7;
  */
 function retryProcess() {
 
+  if (getConfig().maintenancemode === "ON") {
+    Logger.log("メンテナンス中のため実行されませんでした");
+    return;
+  }
+
   const lock = LockService.getScriptLock();
   let locked = false;
   

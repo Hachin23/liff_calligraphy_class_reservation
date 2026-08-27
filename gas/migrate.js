@@ -113,6 +113,7 @@ function syncConfigToWorkers() {
   // 例: B2にバージョン、B5:B10にクラス名、C5:C10に上限回数がある想定
   const configData = {
     version: configSheet.getRange('B2').getValue(),
+    maintenancemode: configSheet.getRange('B5').getValue(),
     CLASS_INFO: {
       CLASS_NAME: configSheet.getRange(3, 2, 1, configSheet.getLastColumn()-1).getValues()[0].filter(String)
     },

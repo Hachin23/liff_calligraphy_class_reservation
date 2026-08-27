@@ -106,6 +106,7 @@ function getConfig() {
   // CONFIG オブジェクトを作成
   const CONFIG = {
     version: configSheet.getRange('B2').getValue(),
+    maintenancemode: configSheet.getRange('B5').getValue(),
     CLASS_INFO: {
       CLASS_NAME: classNames
     },
@@ -121,6 +122,15 @@ function getConfig() {
 // doPost ユーザ情報取得/登録・予約登録・キャンセル
 // ===========================================
 function doPost(e) {
+  if (getConfig().maintenancemode === "ON") {
+    return ContentService
+      .createTextOutput(JSON.stringify({
+      success: false,
+      maintenancemode: "ON",
+      message: "メンテナンス中のため、現在ご利用できません。"
+    }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
   const params = e.parameter;
   const mode = params.mode;
   let result;

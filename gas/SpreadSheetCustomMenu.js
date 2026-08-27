@@ -597,6 +597,12 @@ function executeReservationListGeneration(event) {
  */
 function generateReservationsList(event) {
 
+  if (getConfig().maintenancemode === "ON") {
+    // 実行時間は月初めの0時～1時なので、その時間帯は避ける。
+    Logger.log("メンテナンス中のため実行されませんでした");
+    return;
+  }
+
   const lock = LockService.getScriptLock();
   const LOCK_TIMEOUT_MS = 30000;
   const ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -1030,6 +1036,12 @@ function monthlyMaintenance(event) {
  */
 function frequentCalendarSyncAndMaintenance() {
 
+  if (getConfig().maintenancemode === "ON") {
+    // 実行時間は月初めの0時～1時なので、その時間帯は避ける。
+    Logger.log("メンテナンス中のため実行されませんでした");
+    return;
+  }
+
   const lock = LockService.getScriptLock();
   const LOCK_TIMEOUT_MS = 30000; // 30秒待機
 
@@ -1328,6 +1340,11 @@ function handleEdit(e) {
   if (sheetName === SHEET_NAME_CONFIG && range.getA1Notation() === "B2") {
     Logger.log("設定バージョンの更新を検知しました。");
     syncConfigToWorkers();
+    return;
+  }
+
+  if (getConfig().maintenancemode === "ON") {
+    Logger.log("メンテナンス中のため実行されませんでした");
     return;
   }
 
