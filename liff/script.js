@@ -747,7 +747,11 @@ async function handleReservation(lessonId, dateString, time, classNameText, user
         fetchAndRenderCapacity(CURRENT_SCREEN_DATE);
 
       } else {
-          alert("予約に失敗しました: " + (json.message || "残席がないか、上限を超えています。"));
+          if (json.maintenancemode === "ON") {
+            showMaintenanceScreen();
+          } else {
+            alert("予約に失敗しました: " + (json.message || "残席がないか、上限を超えています。"));
+          }
       }
   } catch (e) {
       alert("通信エラーが発生しました");
@@ -812,7 +816,11 @@ async function executeCancellation(userId, reservationId) {
         // 予約成功後、カレンダーを再描画して残席情報を更新
         fetchAndRenderCapacity(CURRENT_SCREEN_DATE);
       } else {
+          if (json.maintenancemode === "ON") {
+            showMaintenanceScreen();
+          } else {
           alert("キャンセルに失敗しました: " + json.message);
+        }
       }
   } catch (e) {
       alert("通信エラーが発生しました");
