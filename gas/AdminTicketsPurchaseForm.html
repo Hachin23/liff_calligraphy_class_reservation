@@ -48,6 +48,18 @@
         </div>
 
         <div class="form-group">
+            <label for="expirationDateOfMonth">有効期限</label>
+            <select id="expirationDateOfMonth" required>
+                <option value="">選択してください</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+          <label for="expirationDate">有効期限</label>
+          <input type="text" id="expirationDate" disabled>
+        </div>
+
+        <div class="form-group">
             <label>備考</label>
             <textarea id="memo" rows="3"></textarea>
         </div>
@@ -63,11 +75,12 @@
 <script>
 
 window.onload = function() {
-  // 1. 初期データ（生徒一覧と全予約枠）を並列で取得
+  // 1. 初期データを並列で取得
   Promise.all([
     new Promise(resolve => google.script.run.withSuccessHandler(resolve).getStudentListForUI()),
-    new Promise(resolve => google.script.run.withSuccessHandler(resolve).getTicketPrices())
-  ]).then(([students, ticketPrices]) => {
+    new Promise(resolve => google.script.run.withSuccessHandler(resolve).getTicketPrices()),
+    new Promise(resolve => google.script.run.withSuccessHandler(resolve).getExpirationDateOfMonth())
+  ]).then(([students, ticketPrices, expirationDateList]) => {
     // 生徒セレクトボックスの構築
     const sSelect = document.getElementById('studentSelect');
     students.forEach(s => {
@@ -80,6 +93,9 @@ window.onload = function() {
 
     // チケット一覧
     createTicketSelect(ticketPrices);
+
+    // 有効期限一覧
+    createExpirationDateSelect(expirationDateList);
     
     // UI表示
     document.getElementById('loader').style.display = 'none';
@@ -101,7 +117,42 @@ function createTicketSelect(list) {
     });
 }
 
+function createExpirationDateSelect(list) {
+    const select = document.getElementById("expirationDateOfMonth");
+    list.forEach(expirationDate => {
+        const option = document.createElement("option");
+        option.value = expirationDate;
+        option.textContent = `${expirationDate}ヵ月`;
+        select.appendChild(option);
+    });
+}
+
+function updateExpirationDate() {
+    const purchaseDate = document.getElementById("purchaseDate").value;
+    const months = Number(document.getElementById("expirationDateOfMonth").value);
+    const expirationDate = document.getElementById("expirationDate");
+
+    if (!purchaseDate || !months) {
+        expirationDate.value = "";
+        return;
+    }
+
+    const expireDate = new Date(purchaseDate);
+    expireDate.setMonth(expireDate.getMonth() + months + 1);
+    expireDate.setDate(0);
+
+    expirationDate.value = 
+        expireDate.getFullYear() + "/" +
+        String(expireDate.getMonth() + 1).padStart(2, "0") + "/" +
+        String(expireDate.getDate()).padStart(2, "0");
+}
+
+
 document.getElementById("purchaseDate").value = new Date().toISOString().split("T")[0];
+
+document.getElementById("purchaseDate").addEventListener("change", updateExpirationDate);
+document.getElementById("expirationDateOfMonth").addEventListener("change", updateExpirationDate);
+
 
 document.getElementById("ticketForm").addEventListener("submit",(e)=>{
   e.preventDefault();
@@ -110,9 +161,11 @@ document.getElementById("ticketForm").addEventListener("submit",(e)=>{
       userName: document.getElementById("studentSelect").options[document.getElementById("studentSelect").selectedIndex].text,
       count: Number(document.getElementById("ticketCount").value),
       purchaseDate: document.getElementById("purchaseDate").value,
+      expirationDateOfMonth: Number(document.getElementById("expirationDateOfMonth").value),
+      expirationDate: document.getElementById("expirationDate").value,
       memo: document.getElementById("memo").value
   };
-  if(!confirm(`チケット購入者：${data.userName}\nチケット：${data.count}回券\n購入日：${data.purchaseDate}\n備考：${data.memo}\nこの内容でチケット登録しますか？`)) return;
+  if(!confirm(`チケット購入者：${data.userName}\nチケット：${data.count}回券\n購入日：${data.purchaseDate}\n有効期限：${data.expirationDate}（${data.expirationDateOfMonth}ヵ月）まで\n備考：${data.memo}\nこの内容でチケット登録しますか？`)) return;
 
   google.script.run
   .withSuccessHandler(() => {

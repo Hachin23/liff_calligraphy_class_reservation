@@ -100,7 +100,7 @@ function getConfig() {
     throw new Error(`${SHEET_NAME_CONFIG} シートが見つかりません。`);
   }
 
-  const classNames = configSheet.getRange('B3:Z3').getValues()[0].filter(n => n);
+  const classNames = configSheet.getRange('B3').getValue().split(",").map(value => value.trim());
   const firstDayOfWeek = configSheet.getRange('B4').getValue();
 
   // CONFIG オブジェクトを作成

@@ -226,17 +226,16 @@ function getUserReservations(userId, attendedCancel) {
 }
 
 // =============================================
-// チケット回数と値段をスクリプトプロパティから取得
+// チケット回数と値段をConfigシートから取得
 // =============================================
 function getTicketPrices() {
 
-  const value = PropertiesService
-    .getScriptProperties()
-    .getProperty("TICKET_PRICES");
+  const configSheet = SPREADSHEET.getSheetByName(SHEET_NAME_CONFIG);
+  const prices = configSheet.getRange('B7').getValue();
 
-  if (!value) return [];
+  if (!prices) return [];
 
-  return value.split(",").map(item => {
+  return prices.split(",").map(item => {
     const [count, price] = item.split(":");
     return {
       count: Number(count),
@@ -246,15 +245,29 @@ function getTicketPrices() {
 }
 
 function getTicketPriceMap() {
-  const value = PropertiesService
-    .getScriptProperties()
-    .getProperty("TICKET_PRICES");
 
-  return value.split(",").reduce((obj, item) => {
-    const [count, price] = item.split(":");
-    obj[count] = Number(price);
+  const prices = getTicketPrices();
+
+  return prices.reduce((obj, item) => {
+    obj[item.count] = item.price;
     return obj;
   }, {});
+}
+
+// =============================================
+// 有効期限（月）をConfigシートから取得
+// =============================================
+function getExpirationDateOfMonth() {
+
+  const configSheet = SPREADSHEET.getSheetByName(SHEET_NAME_CONFIG);
+  const expiration = configSheet.getRange('B6').getValue();
+
+  if (!expiration) return [];
+
+  return expiration
+    .split(",")
+    .map(value => Number(value.trim()))
+    .sort((a, b) => a - b);
 }
 
 // =========================
@@ -267,7 +280,7 @@ function saveTicket(data) {
 
   if (lock.hasLock()) {
     try {
-
+      const ssTimezone = SPREADSHEET.getSpreadsheetTimeZone();
       const userTicketSheet = SPREADSHEET.getSheetByName(SHEET_NAME_USER_TICKETS);
       const reservationsSheet = SPREADSHEET.getSheetByName(SHEET_NAME_RESERVATIONS);
       if (!reservationsSheet || !userTicketSheet) {
@@ -283,24 +296,20 @@ function saveTicket(data) {
       }
     
       const purchaseDate = new Date(data.purchaseDate);
-      const expireDate = new Date(purchaseDate);
-      const months = data.count <= 3 ? 3 : 6;
-      expireDate.setMonth(expireDate.getMonth() + months + 1);
-      expireDate.setDate(0);
+      const expireDate = new Date(data.expirationDate);
       const expireDateStr = Utilities.formatDate(
       expireDate,
-      Session.getScriptTimeZone(),
+      ssTimezone,
       "yyyy/MM/dd"
       );
       const purchaseDateStr = Utilities.formatDate(
       purchaseDate,
-      Session.getScriptTimeZone(),
+      ssTimezone,
       "yyyy/MM/dd"
       );
     
       const student = getStudentByLineId(data.userId);
       const now = new Date();
-      const ssTimezone = SPREADSHEET.getSpreadsheetTimeZone();
       const dateString = Utilities.formatDate(now, ssTimezone, "yyyy-MM-dd");
       
       const userTicketRows = userTicketSheet.getDataRange().getValues()
