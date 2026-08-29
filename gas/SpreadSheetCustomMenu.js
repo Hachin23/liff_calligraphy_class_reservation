@@ -604,23 +604,16 @@ function generateReservationsList(event) {
   }
 
   const lock = LockService.getScriptLock();
-  const LOCK_TIMEOUT_MS = 30000;
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const LOCK_TIMEOUT_MS = 90000;
   
-  const ui = safelyGetUi();
-  const uiExists = ui !== null;
-  const listSheet = ss.getSheetByName(SHEET_NAME_RESERVATIONS_LIST) || ss.insertSheet(SHEET_NAME_RESERVATIONS_LIST);
-  let generatedCount = 0;
-
+  const uiExists = safelyGetUi() !== null;
+  
   try {
-    const isLockAcquired = lock.tryLock(LOCK_TIMEOUT_MS);
-
-    if (!isLockAcquired) {
-      // ロックが取得できなかった場合（他のバッチ処理などが実行中の場合）
-      // エラーとして処理を中断する
-      throw new Error('他のバッチ処理が実行中のため、ロックを取得できませんでした。処理をスキップします。');
-    }
-
+    lock.waitLock(LOCK_TIMEOUT_MS);
+    
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const listSheet = ss.getSheetByName(SHEET_NAME_RESERVATIONS_LIST) || ss.insertSheet(SHEET_NAME_RESERVATIONS_LIST);
+    let generatedCount = 0;
     const templateSheet = ss.getSheetByName(SHEET_NAME_SCHEDULE_TEMPLATE);
     const exceptionsSheet = ss.getSheetByName(SHEET_NAME_EXCEPTIONS);
 
@@ -1043,17 +1036,10 @@ function frequentCalendarSyncAndMaintenance() {
   }
 
   const lock = LockService.getScriptLock();
-  const LOCK_TIMEOUT_MS = 30000; // 30秒待機
+  const LOCK_TIMEOUT_MS = 60000; // 60秒待機
 
   try {
-
-    const isLockAcquired = lock.tryLock(LOCK_TIMEOUT_MS);
-
-    if (!isLockAcquired) {
-      Logger.log('他のGAS処理が実行中のため、カレンダー同期処理をスキップしました。');
-      // ロックを取得できなかったため、処理を中断
-      throw new Error('他のGAS処理が実行中のため、カレンダー同期処理をスキップしました。');
-    }
+    lock.waitLock(LOCK_TIMEOUT_MS);
 
     const ssTimezone = SPREADSHEET.getSpreadsheetTimeZone();
     const resSheet = SPREADSHEET.getSheetByName(SHEET_NAME_RESERVATIONS);
@@ -1292,7 +1278,6 @@ function frequentCalendarSyncAndMaintenance() {
   } catch(e) {
     Logger.log(`[FATAL ERROR] カレンダー同期中にエラーが発生しました: ${e.toString()}`);
     throw e;
-
   } finally {
     if (lock.hasLock()) {
       lock.releaseLock();
@@ -1396,8 +1381,10 @@ function handleEdit(e) {
         }
         const lock = LockService.getScriptLock();
         try {
-          lock.waitLock(10000);
-
+          if (!lock.tryLock(30000)) {
+            // ロックを取得できなかったため、処理を中断
+            throw new Error('現在、他の処理が実行中です。しばらくしてから再度お試しください。');
+          }
           const reservationsSheet = SPREADSHEET.getSheetByName(SHEET_NAME_RESERVATIONS);
           const userTicketSheet = SPREADSHEET.getSheetByName(SHEET_NAME_USER_TICKETS);
           const monthlyData = getMonthlyTicketReservations(reservationsSheet, userTicketSheet, userId);

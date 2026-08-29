@@ -39,11 +39,13 @@ function retryProcess() {
   }
 
   const lock = LockService.getScriptLock();
-  let locked = false;
+  const LOCK_TIMEOUT_MS = 5000;
   
   try {
-    lock.waitLock(5000);
-    locked = true;
+    if (!lock.tryLock(LOCK_TIMEOUT_MS)) {
+      Logger.log("他のGAS処理が実行中のため、リトライ処理をスキップしました。");
+      return;
+    }
 
     // スプレッドシート読み込み
     const retrySheet = SPREADSHEET.getSheetByName(SHEET_NAME_RETRY);
@@ -83,7 +85,7 @@ function retryProcess() {
     console.log(`リトライ処理を実行できませんでした: ${e.message}`);
     return;
   } finally {
-    if (locked) {
+    if (lock.hasLock()) {
       lock.releaseLock();
     }
   }
