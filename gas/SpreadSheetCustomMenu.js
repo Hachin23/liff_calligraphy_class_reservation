@@ -1395,8 +1395,9 @@ function handleEdit(e) {
           return;
         }
         const lock = LockService.getScriptLock();
-        lock.waitLock(10000);
         try {
+          lock.waitLock(10000);
+
           const reservationsSheet = SPREADSHEET.getSheetByName(SHEET_NAME_RESERVATIONS);
           const userTicketSheet = SPREADSHEET.getSheetByName(SHEET_NAME_USER_TICKETS);
           const monthlyData = getMonthlyTicketReservations(reservationsSheet, userTicketSheet, userId);
@@ -1423,6 +1424,8 @@ function handleEdit(e) {
             }
           }
           syncUserFullData(userId);
+        } catch (e) {
+          alert(e.message);
         } finally {
           lock.releaseLock();
         }
