@@ -33,7 +33,7 @@ jobs:
       - name: Push Code
         run: clasp push --force
 
-      # ↓ ここで既存のデプロイIDを指定して新しいバージョンとして上書き更新します
+      # ↓ ここで既存のデプロイIDを指定して新しいバージョンとして更新します
       - name: Deploy New Version to Existing Deployment
         run: |
           clasp deploy -i ${{ secrets.DEPLOYMENT_ID }} -d "Auto deployed via GitHub Actions"
