@@ -1,0 +1,39 @@
+name: Deploy to Production GAS
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'gas/**'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install clasp
+        run: npm install -g @google/clasp
+
+      - name: Create clasprc.json
+        run: |
+          echo '${{ secrets.CLASPRC_JSON }}' > ~/.clasprc.json
+
+      - name: Create .clasp.json
+        run: |
+          echo '{"scriptId":"${{ secrets.SCRIPT_ID }}","rootDir":"./gas"}' > .clasp.json
+
+      - name: Push Code
+        run: clasp push --force
+
+      # ↓ ここで既存のデプロイIDを指定して新しいバージョンとして上書き更新します
+      - name: Deploy New Version to Existing Deployment
+        run: |
+          clasp deploy -i ${{ secrets.DEPLOYMENT_ID }} -d "Auto deployed via GitHub Actions"
