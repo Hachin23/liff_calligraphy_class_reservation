@@ -201,7 +201,7 @@ function getUserInfoFromSheet(userId) {
 }
 
 /**
- * 予約完了後のWorkers同期を1回で実行する
+ * 予約完了後のWorkers同期を1回で実行する 
  */
 function syncReservationToWorkers(userId, userData, capacityData) {
   
