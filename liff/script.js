@@ -1236,7 +1236,7 @@ function checkUserLimitReached(
   const targetTicketInfo = [...ticketInfo.dispInfo]
     .sort((ticket1, ticket2) =>
     // 有効期限が遠い順
-    ticket2.expirationDate - ticket1.expirationDate
+    new Date(ticket2.expirationDate).getTime() - new Date(ticket1.expirationDate).getTime()
     )[0];
   targetTicketExpire = targetTicketInfo?.expirationDate ? targetTicketInfo.expirationDate.substring(0, 7) : null;
   const monthlyAndTicketFinished = (ticketEmpty || (targetTicketExpire && monthKey > targetTicketExpire)) && AttendedCount >= upperLimit;
