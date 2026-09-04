@@ -444,12 +444,18 @@ function makeReservation(params) {
 
       const checkUpperLimit = targetMonth === reservationMonth ? limitNumberIntThisMonth : limitNumberIntNextMonth;
       if (userMontlyRow) {
-        const checkRemainingNumber = availableRemainingNumberTotal;
-        const checkTotalNumber = checkRemainingNumber + currentReservations;
-        if (currentReservations >= checkTotalNumber) {
+        // 1. 月稽古枠の残り数を算出（すでに上限以上の場合は 0）
+        const remainingMonthlySeats = Math.max(0, checkUpperLimit - currentReservations);
+        // 2. あと予約できる「合計の残り枠数」（月枠の残り ＋ チケット残数）
+        const totalAvailableSeats = remainingMonthlySeats + availableRemainingNumberTotal;
+        // 3. 合計の残り枠が 0 以下の場合は予約不可
+        if (totalAvailableSeats <= 0) {
           // ユーザーにどの月の上限に達したかを明確に伝える
           const targetMonthDisplay = Utilities.formatDate(targetDate, ssTimezone, 'M月');
-          return { success: false, message: `${targetMonthDisplay}分の予約上限回数（${checkTotalNumber}回）に達しています。既に${currentReservations}回予約済みです。` };
+          return {
+            success: false,
+            message: `${targetMonthDisplay}分の予約上限回数（${checkTotalNumber}回）に達しています。`
+          };
         }
       } else {
         if (!targetTicket) {
