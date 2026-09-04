@@ -410,8 +410,8 @@ function makeReservation(params) {
           return reservationYearMonth === targetYearMonth;
         }).length;
       
-      const targetMonth = Utilities.formatDate(currentDateTime, ssTimezone, 'MM');
-      const reservationMonth = Utilities.formatDate(targetDate, ssTimezone, 'MM');
+      const targetMonth = Utilities.formatDate(currentDateTime, ssTimezone, 'yyyy-MM');
+      const reservationMonth = Utilities.formatDate(targetDate, ssTimezone, 'yyyy-MM');
       
       const now = new Date();
       const dateString = date;
@@ -421,7 +421,8 @@ function makeReservation(params) {
       }));
       const validUserTicketsRows = userTicketsRowsWithIndex
         .filter(ticket =>
-        ticket.rowData[USER_TICKETS_COL_USER_ID] === userId &&
+          ticket.rowData[USER_TICKETS_COL_USER_ID] === userId &&
+          ticket.rowData[USER_TICKETS_COL_STATUS] === "有効" &&
           Utilities.formatDate(
             ticket.rowData[USER_TICKETS_COL_EXPIRE_DATE], SPREADSHEET.getSpreadsheetTimeZone(), 'yyyy-MM-dd') >= dateString
       ).sort((a, b) => {
@@ -443,7 +444,9 @@ function makeReservation(params) {
       let targetTicket = validUserTicketsRows.find(ticket => ticket.rowData[USER_TICKETS_COL_REMAINING_NUM] > 0);
 
       const checkUpperLimit = targetMonth === reservationMonth ? limitNumberIntThisMonth : limitNumberIntNextMonth;
-      if (userMontlyRow) {
+      let isUserMonthly = checkUpperLimit !== 0;
+      
+      if (isUserMonthly) {
         // 1. 月稽古枠の残り数を算出（すでに上限以上の場合は 0）
         const remainingMonthlySeats = Math.max(0, checkUpperLimit - currentReservations);
         // 2. あと予約できる「合計の残り枠数」（月枠の残り ＋ チケット残数）
@@ -454,7 +457,7 @@ function makeReservation(params) {
           const targetMonthDisplay = Utilities.formatDate(targetDate, ssTimezone, 'M月');
           return {
             success: false,
-            message: `${targetMonthDisplay}分の予約上限回数（${checkTotalNumber}回）に達しています。`
+            message: `${targetMonthDisplay}分の予約上限に達しています。`
           };
         }
       } else {
@@ -523,7 +526,7 @@ function makeReservation(params) {
 
       // targetTicket.rowData（配列データ）とシートの値の両方を更新
       let usageType = '';
-      if (userMontlyRow && currentReservations < checkUpperLimit) {
+      if (isUserMonthly && currentReservations < checkUpperLimit) {
         // 月謝枠を利用
         usageType = 'monthly';
       } else {
