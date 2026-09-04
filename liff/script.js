@@ -1234,6 +1234,7 @@ function checkUserLimitReached(
   const monthlyReservedFinished = AttendedCount + reservedCount === upperLimit;
   // 表示しているカレンダーの月の有効期限
   const targetTicketInfo = [...ticketInfo.dispInfo]
+    .filter(ticket => ticket.remainingNumber !== 0)
     .sort((ticket1, ticket2) =>
     // 有効期限が遠い順
     new Date(ticket2.expirationDate).getTime() - new Date(ticket1.expirationDate).getTime()
