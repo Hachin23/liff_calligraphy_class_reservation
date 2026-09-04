@@ -662,7 +662,8 @@ function makeReservation(params) {
       Logger.log(e);
       return {
         success: false,
-        message: `予約処理中にエラーが発生しました。\n行数: ${e.lineNumber} \n詳細: ${e.message}`
+        // message: `予約処理中にエラーが発生しました。\n行数: ${e.lineNumber} \n詳細: ${e.message}`
+        message: `予約処理中にエラーが発生しました。`
       };
     } finally {
       lock.releaseLock();
