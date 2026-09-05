@@ -1,7 +1,7 @@
 // ================================
 // 定数
 // ================================
-// 共通で利用するプロパティサービスのインスタンス
+// 共通で利用するプロパティサービスのインスタンス!
 const SCRIPT_PROPERTIES = PropertiesService.getScriptProperties();
 // スプレッドシートID（指定するスプレッドシートによって変更する）
 const SPREADSHEET_ID = getRequiredProperty("SPREADSHEET_ID");
