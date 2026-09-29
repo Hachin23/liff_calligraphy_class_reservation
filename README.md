@@ -44,7 +44,47 @@ Google Apps Script (GAS) をバックエンド、Google スプレッドシート
 └── README.md            # プロジェクト説明書  
 
 ## 🚀 セットアップとデプロイ  
-後で更新予定
+### 環境構成
+本番環境と開発環境はブランチで分け、それぞれ独立したリソースを使用します（開発環境から本番データに触れないようにするため）。
+
+| 項目 | 本番 (`main`) | 開発 (`develop`) |
+|---|---|---|
+| フロントエンド | Cloudflare Pages (Production) | Cloudflare Pages (Preview: `develop.<プロジェクト名>.pages.dev`) |
+| バックエンド | 本番GASプロジェクト | 開発用GASプロジェクト |
+| データベース | 本番スプレッドシート | 開発用スプレッドシート |
+| キャッシュ | 本番 Workers / KV | 開発用 Workers / KV |
+| LINE | 本番LIFFアプリ | 開発用LIFFアプリ |
+
+### 開発の流れ
+1. `develop` ブランチで開発し、push する。
+   - `liff/` → Cloudflare Pages の Preview 環境へ自動デプロイ
+   - `gas/` → GitHub Actions (`deploy-dev.yml`) で開発用GASへ自動デプロイ
+2. 開発用LIFFアプリから動作確認する。
+3. 問題なければ `develop` を `main` にマージして push する。
+   - `liff/` → Cloudflare Pages の Production 環境へ自動デプロイ
+   - `gas/` → GitHub Actions (`deploy.yml`) で本番GASへ自動デプロイ
+
+### GitHub Secrets
+| Secret | 用途 |
+|---|---|
+| `CLASPRC_JSON` | clasp の認証情報（本番・開発共通） |
+| `SCRIPT_ID` / `DEPLOYMENT_ID` | 本番GASのスクリプトID / デプロイID |
+| `DEV_SCRIPT_ID` / `DEV_DEPLOYMENT_ID` | 開発用GASのスクリプトID / デプロイID |
+
+### GASスクリプトプロパティ
+本番・開発それぞれのGASプロジェクトに、各環境の値を設定します。
+- `SPREADSHEET_ID`
+- `LIFF_CLIENT_ID`
+- `WORKERS_URL`
+- `ADMIN_CALENDAR_ID`
+- `ADMIN_LINE_USER_ID`
+- `CHANNEL_ACCESS_TOKEN`
+
+### Cloudflare Pages 環境変数
+Production / Preview それぞれに各環境の値を設定します。ビルド時に `liff/script.js` のプレースホルダーが置換されます。
+- `$$GAS_ENDPOINT_URL_PLACEHOLDER$$` → GASのウェブアプリURL
+- `$$LIFF_ID_PLACEHOLDER$$` → LIFF ID
+- `$$WORKERS_ENDPOINT_URL_PLACEHOLDER$$` → Workers のURL
 
 ## ⚙️ 定期メンテナンス（トリガー）  
 ### generateReservationsList(e) 関数
