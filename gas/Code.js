@@ -857,10 +857,9 @@ function handleCancelReservation(params) {
         return time2.localeCompare(time1);
         });
 
-        if (!allowAttendedCancel && reservations.length === 0) {
-          throw new Error(`チケットに紐づく予約が見つかりません。ticketId: ${ticketId}`);
-        }
-
+        // 使用分がすべて受講済み（または削除済み）のチケットは確定予約が0件になるが、
+        // キャンセル対象とは別のチケットのため、予約なしのチケットとして扱う
+        // （cancelTicketConsumption / slideMonthlyAndTicket は予約のないチケットをスキップする）
         return {
           ticket: ticket,
           reservations: reservations
@@ -1501,11 +1500,19 @@ function slideMonthlyAndTicket(
 
   // ============================================================
   // 月謝枠を超えているのに対象チケット予約が見つからない
+  //
+  // 対象月のチケット予約がすでに受講済みの場合などに発生する。
+  // キャンセル自体は継続し、月謝へ戻す処理は行わずに警告を残す。
   // ============================================================
-  throw new Error(
-    `月謝へ戻すチケット予約が見つかりません。` +
-    ` userId=${userId}, month=${selectedCancelMonth}`
-  );
+  logWarn({
+    type: "MONTHLY_SLIDE_NOT_FOUND",
+    targetUserId: userId,
+    message: "月謝へ戻すチケット予約が見つからないため、月謝へのスライドを行いませんでした。",
+    detailInfo: JSON.stringify({
+      month: selectedCancelMonth,
+      cancelReservationRow: targetReservationData.rowIndex
+    })
+  });
 }
 
 function cancelMonthlyAndTicketConsumption(
