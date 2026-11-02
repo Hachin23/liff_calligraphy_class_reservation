@@ -902,10 +902,14 @@ function monthlyMaintenance(event) {
     
     // 配列上の列番号
     const COL_USER_ID = 0;  // A列
+    const COL_USER_NAME = 1; // B列
     const COL_DEFAULT = 2;  // C列
     const COL_CURRENT = 3;  // D列
     const COL_NEXT = 4;     // E列
-    
+
+    // スライド処理に失敗した生徒（管理者通知用）
+    const failedUserNames = [];
+
     for (let i = 1; i < userMonthlySubscriptionsData.length; i++) {
       const row = userMonthlySubscriptionsData[i];
       const userId = row[COL_USER_ID];
@@ -919,85 +923,107 @@ function monthlyMaintenance(event) {
       const newCurrentCount = Number(row[COL_NEXT]) || 0;
       const newNextCount = Number(row[COL_DEFAULT]) || 0;
 
-      // ===========================================
-      // 現在のチケット予約を一旦解除
-      // ===========================================
-      // 今月の稽古回数を調整するため、
-      // 最初に既存のチケット予約をすべて解除する。
-      const ticketReservationData = getTicketReservations(
-        reservationsSheet,
-        userTicketSheet,
-        userId
-      );
+      // 1ユーザーのエラーで他ユーザーの処理と月謝回数の更新が止まらないようにする
+      try {
+        // ===========================================
+        // 現在の月謝予約を取得
+        // ===========================================
+        // チケット予約はチケットIDで検索するため、
+        // 月謝枠の調整はチケット予約の紐付けを解除する前に行う。
+        let monthlyReservations = getMonthlyLessonReservations(reservationsSheet, userId);
 
-      clearTicketReservations(
-        reservationsSheet,
-        userTicketSheet,
-        ticketReservationData
-      );
-      
-      // ===========================================
-      // 現在の月謝予約を取得
-      // ===========================================
-      let monthlyReservations = getMonthlyLessonReservations(reservationsSheet, userId);
+        // ===========================================
+        // 今月の月謝枠を調整
+        // ===========================================
+        const currentReservations = monthlyReservations.thisMonth;
 
-      // ===========================================
-      // 今月の月謝枠を調整
-      // ===========================================
-      const currentReservations = monthlyReservations.thisMonth;
+        if (currentReservations.length < newCurrentCount) {
+          const convertCount =
+            newCurrentCount - currentReservations.length;
 
-      if (currentReservations.length < newCurrentCount) {
-        const convertCount =
-          newCurrentCount - currentReservations.length;
+          const monthlyData =
+            getMonthlyTicketReservations(
+              reservationsSheet,
+              userTicketSheet,
+              userId
+            );
 
-        const monthlyData =
-          getMonthlyTicketReservations(
+          convertTicketReservationsToMonthly(
             reservationsSheet,
             userTicketSheet,
-            userId
+            monthlyData.thisMonth,
+            convertCount
           );
 
-        convertTicketReservationsToMonthly(
-          reservationsSheet,
-          userTicketSheet,
-          monthlyData.thisMonth,
-          convertCount
-        );
+        } else if (currentReservations.length > newCurrentCount) {
+          const convertCount = currentReservations.length - newCurrentCount;
+          convertMonthlyReservationsToTicket(
+            reservationsSheet,
+            userTicketSheet,
+            userId,
+            currentReservations,
+            convertCount
+          );
+        }
 
-      } else if (currentReservations.length > newCurrentCount) {
-        const convertCount = currentReservations.length - newCurrentCount;
-        convertMonthlyReservationsToTicket(
-          reservationsSheet,
-          userTicketSheet,
-          userId,
-          currentReservations,
-          convertCount
-        );
-      }
-
-      // ===========================================
-      // 今月チケット予約を再配置
-      // ===========================================
-      const updatedTicketReservationData =
-        getTicketReservations(
+        // ===========================================
+        // チケット予約を再配置
+        // ===========================================
+        // 紐付け解除後はチケットIDで予約を検索できないため、
+        // 解除前に取得したデータで有効期限の近いチケットから再割り当てする。
+        const ticketReservationData = getTicketReservations(
           reservationsSheet,
           userTicketSheet,
           userId
         );
 
-      reassignTicketReservations(
-        reservationsSheet,
-        userTicketSheet,
-        updatedTicketReservationData
-      );
+        clearTicketReservations(
+          reservationsSheet,
+          userTicketSheet,
+          ticketReservationData
+        );
+
+        reassignTicketReservations(
+          reservationsSheet,
+          userTicketSheet,
+          ticketReservationData
+        );
+      } catch (e) {
+        failedUserNames.push(row[COL_USER_NAME] || userId);
+        logError({
+          type: "MONTHLY_MAINTENANCE_ERROR",
+          targetUserId: userId,
+          message: `月次メンテナンスの稽古回数スライド処理でエラーが発生しました。${e.message}`,
+          detailInfo: e.stack || ""
+        });
+      }
 
       // ===========================================
       // 月謝回数を更新
       // ===========================================
+      // 月は切り替わっているため、スライド処理が失敗しても回数は更新する
       row[COL_CURRENT] = newCurrentCount;
       row[COL_NEXT] = newNextCount;
 
-      syncUserFullData(userId);
+      try {
+        syncUserFullData(userId);
+      } catch (e) {
+        Logger.log(`Workers同期エラー: ${userId} / ${e.message}`);
+      }
+    }
+
+    if (failedUserNames.length > 0) {
+      try {
+        sendAdminLineMessage(
+`月次メンテナンスで稽古回数のスライド処理に失敗した生徒がいます。
+
+・対象：${failedUserNames.join('、')}
+
+systemlogシートを確認し、予約の利用種別とチケット残数を確認してください。`
+        );
+      } catch (e) {
+        Logger.log(`管理者へのLINE通知エラー: ${e.message}`);
+      }
     }
     
     // ===========================================
@@ -1800,39 +1826,59 @@ function reassignTicketReservations(
       return timeA < timeB ? -1 : timeA > timeB ? 1 : 0;
     });
 
-  let reservationIndex = 0;
+  // ticketReservationData は有効期限の近い順に並んでいる
+  const tickets = ticketReservationData.map(ticketInfo => ticketInfo.ticket);
 
-  // 有効期限の近いチケットから割り当て
-  for (const ticketInfo of ticketReservationData) {
-    let remainingNum = Number(ticketInfo.ticket.rowData[USER_TICKETS_COL_REMAINING_NUM]);
+  // 予約日の古い順に、予約日が有効期限内のチケットのうち期限の近いものへ割り当てる
+  for (const reservation of reservations) {
+    const reservationDateStr = Utilities.formatDate(
+      reservation.rowData[RES_COL_DATE],
+      ssTimezone,
+      'yyyy-MM-dd'
+    );
 
-    while (remainingNum > 0 && reservationIndex < reservations.length) {
-      const reservation = reservations[reservationIndex];
+    let targetTicket = tickets.find(ticket =>
+      Number(ticket.rowData[USER_TICKETS_COL_REMAINING_NUM]) > 0 &&
+      Utilities.formatDate(ticket.rowData[USER_TICKETS_COL_EXPIRE_DATE], ssTimezone, 'yyyy-MM-dd') >= reservationDateStr
+    );
 
-      // 利用種別を設定
-      reservationsSheet
-        .getRange(reservation.rowIndex + 1, RES_COL_USAGE_TYPE + 1)
-        .setValue("チケット");
+    if (!targetTicket) {
+      // 有効期限内のチケットがない場合でも利用種別を空にしないよう、
+      // 残数のある最も期限の遅いチケットへ割り当てて警告を残す
+      targetTicket = tickets
+        .filter(ticket => Number(ticket.rowData[USER_TICKETS_COL_REMAINING_NUM]) > 0)
+        .pop();
 
-      // チケットIDを設定
-      reservationsSheet
-        .getRange(reservation.rowIndex + 1, RES_COL_TICKET_ID + 1)
-        .setValue(ticketInfo.ticket.rowData[USER_TICKETS_COL_TICKET_ID]);
-      remainingNum--;
-      reservationIndex++;
+      logWarn({
+        type: "TICKET_REASSIGN_EXPIRED",
+        targetUserId: reservation.rowData[RES_COL_USER_ID],
+        message: "予約日が有効期限内のチケットがないため、期限外のチケットに割り当てました。",
+        detailInfo: JSON.stringify({
+          reservationRow: reservation.rowIndex + 1,
+          reservationDate: reservationDateStr,
+          ticketId: targetTicket ? targetTicket.rowData[USER_TICKETS_COL_TICKET_ID] : ""
+        })
+      });
+
+      if (!targetTicket) {
+        continue;
+      }
     }
+
+    // 利用種別・チケットIDを設定（列が隣り合っているのでまとめて更新）
+    reservationsSheet
+      .getRange(reservation.rowIndex + 1, RES_COL_USAGE_TYPE + 1, 1, 2)
+      .setValues([["チケット", targetTicket.rowData[USER_TICKETS_COL_TICKET_ID]]]);
 
     // メモリ上の値を更新
-    ticketInfo.ticket.rowData[USER_TICKETS_COL_REMAINING_NUM] = remainingNum;
+    targetTicket.rowData[USER_TICKETS_COL_REMAINING_NUM] =
+      Number(targetTicket.rowData[USER_TICKETS_COL_REMAINING_NUM]) - 1;
+  }
 
-    // シートへ反映
+  // チケット残数をシートへ反映
+  for (const ticket of tickets) {
     userTicketSheet
-      .getRange(ticketInfo.ticket.rowIndex + 1, USER_TICKETS_COL_REMAINING_NUM + 1)
-      .setValue(remainingNum);
-
-    // 全予約に割り当て終わったら終了
-    if (reservationIndex >= reservations.length) {
-      break;
-    }
+      .getRange(ticket.rowIndex + 1, USER_TICKETS_COL_REMAINING_NUM + 1)
+      .setValue(ticket.rowData[USER_TICKETS_COL_REMAINING_NUM]);
   }
 }
